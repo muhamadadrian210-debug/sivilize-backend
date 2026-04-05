@@ -65,6 +65,10 @@ const RABCalculator = () => {
     floors: 1,
     dimensions: [{ length: 0, width: 0, height: 3 }],
     status: 'draft',
+    bedroomCount: 3,
+    bathroomCount: 2,
+    doorCount: 4,
+    windowCount: 6,
   });
 
   const [rabItems, setRabItems] = useState<RABItem[]>([]);
@@ -178,6 +182,25 @@ const RABCalculator = () => {
 
       // Finishing
       addItem('fin-001', paintArea, { 'Pekerja': 2, 'Tukang Cat': 2, 'Mandor': 1 });
+
+      // Bukaan - Pintu & Jendela
+      const doorCount = projectData.doorCount ?? 4;
+      const windowCount = projectData.windowCount ?? 6;
+      const bathroomCount = projectData.bathroomCount ?? 2;
+
+      // Pintu utama + kamar tidur (kurangi pintu kamar mandi)
+      const mainDoors = Math.max(0, doorCount - bathroomCount);
+      if (mainDoors > 0) {
+        addItem('buk-001', mainDoors, { 'Pekerja': 1, 'Tukang Kayu': 2, 'Mandor': 1 });
+      }
+      // Pintu kamar mandi
+      if (bathroomCount > 0) {
+        addItem('buk-003', bathroomCount, { 'Pekerja': 1, 'Tukang Kayu': 1, 'Mandor': 1 });
+      }
+      // Jendela
+      if (windowCount > 0) {
+        addItem('buk-002', windowCount, { 'Pekerja': 1, 'Tukang Kayu': 2, 'Mandor': 1 });
+      }
 
       setRabItems(generated);
       setLoading(false);
@@ -366,6 +389,49 @@ const RABCalculator = () => {
                   <option value="4-air">Atap 4 Air</option>
                   <option value="dak">Atap Dak Beton</option>
                 </select>
+              </div>
+            </div>
+
+            {/* Detail Ruangan & Bukaan */}
+            <div className="border-t border-border pt-6">
+              <h4 className="text-sm font-bold text-text-secondary uppercase tracking-widest mb-4">Detail Ruangan &amp; Bukaan</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <label className="text-text-secondary text-sm font-medium">Kamar Tidur</label>
+                  <input
+                    type="number" min="0"
+                    value={projectData.bedroomCount}
+                    onChange={(e) => setProjectData({...projectData, bedroomCount: parseInt(e.target.value) || 0})}
+                    className="w-full h-12 bg-background border border-border rounded-xl px-4 text-white focus:outline-none focus:border-primary transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-text-secondary text-sm font-medium">Kamar Mandi</label>
+                  <input
+                    type="number" min="0"
+                    value={projectData.bathroomCount}
+                    onChange={(e) => setProjectData({...projectData, bathroomCount: parseInt(e.target.value) || 0})}
+                    className="w-full h-12 bg-background border border-border rounded-xl px-4 text-white focus:outline-none focus:border-primary transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-text-secondary text-sm font-medium">Jumlah Pintu</label>
+                  <input
+                    type="number" min="0"
+                    value={projectData.doorCount}
+                    onChange={(e) => setProjectData({...projectData, doorCount: parseInt(e.target.value) || 0})}
+                    className="w-full h-12 bg-background border border-border rounded-xl px-4 text-white focus:outline-none focus:border-primary transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-text-secondary text-sm font-medium">Jumlah Jendela</label>
+                  <input
+                    type="number" min="0"
+                    value={projectData.windowCount}
+                    onChange={(e) => setProjectData({...projectData, windowCount: parseInt(e.target.value) || 0})}
+                    className="w-full h-12 bg-background border border-border rounded-xl px-4 text-white focus:outline-none focus:border-primary transition-all"
+                  />
+                </div>
               </div>
             </div>
           </div>

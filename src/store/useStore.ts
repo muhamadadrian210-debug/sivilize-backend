@@ -22,6 +22,11 @@ export interface Project {
   versions: ProjectVersion[];
   dailyLogs: DailyLog[];
   status: 'draft' | 'ongoing' | 'completed';
+  // Detail ruangan & bukaan
+  bedroomCount?: number;
+  bathroomCount?: number;
+  doorCount?: number;
+  windowCount?: number;
 }
 
 export interface ProjectVersion {
