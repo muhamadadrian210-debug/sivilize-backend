@@ -14,12 +14,14 @@ import AboutUs from './components/legal/AboutUs';
 import Contact from './components/legal/Contact';
 import { useStore } from './store/useStore';
 import { AnimatePresence, motion } from 'framer-motion';
+import { ToastProvider } from './components/common/Toast';
+import Onboarding from './components/common/Onboarding';
 
 function App() {
   const { activeTab, isAuthenticated } = useStore();
 
   if (!isAuthenticated) {
-    return <AuthPage />;
+    return <ToastProvider><AuthPage /></ToastProvider>;
   }
 
   const renderContent = () => {
@@ -62,28 +64,31 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-text-primary flex flex-col">
-      <Sidebar />
-      <Navbar />
-      
-      <main className="pl-64 pt-20 transition-all duration-300 flex-1 flex flex-col">
-        <div className="flex-1">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="p-8"
-            >
-              {renderContent()}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-        <Footer />
-      </main>
-    </div>
+    <ToastProvider>
+      <Onboarding />
+      <div className="min-h-screen bg-background text-text-primary flex flex-col">
+        <Sidebar />
+        <Navbar />
+        
+        <main className="pl-64 pt-20 transition-all duration-300 flex-1 flex flex-col">
+          <div className="flex-1">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="p-8"
+              >
+                {renderContent()}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+          <Footer />
+        </main>
+      </div>
+    </ToastProvider>
   );
 }
 
