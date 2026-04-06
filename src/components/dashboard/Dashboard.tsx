@@ -61,7 +61,7 @@ const Dashboard = () => {
             <p className="text-text-secondary mt-1">Selamat datang kembali, {user?.name || 'Engineer Admin'}!</p>
           </div>
           <div className="text-right">
-            <p className="text-white font-semibold">{new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <p className="text-white font-semibold">{new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Makassar' })}</p>
             <p className="text-text-secondary text-sm">Status: Sistem Online</p>
           </div>
         </div>
@@ -114,7 +114,7 @@ const Dashboard = () => {
           <p className="text-text-secondary mt-1">Selamat datang kembali, {user?.name || 'Engineer Admin'}!</p>
         </div>
         <div className="text-right">
-          <p className="text-white font-semibold">{new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+          <p className="text-white font-semibold">{new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Makassar' })}</p>
           <p className="text-text-secondary text-sm">Status: Sistem Online</p>
         </div>
       </div>
