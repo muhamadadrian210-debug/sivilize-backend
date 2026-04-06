@@ -16,6 +16,7 @@ import { useStore } from './store/useStore';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ToastProvider } from './components/common/Toast';
 import Onboarding from './components/common/Onboarding';
+import AIChat from './components/common/AIChat';
 
 function App() {
   const { activeTab, isAuthenticated } = useStore();
@@ -66,6 +67,7 @@ function App() {
   return (
     <ToastProvider>
       <Onboarding />
+      <AIChat />
       <div className="min-h-screen bg-background text-text-primary flex flex-col">
         <Sidebar />
         <Navbar />
