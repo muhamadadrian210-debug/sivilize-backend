@@ -49,15 +49,26 @@ app.use(hpp());
 // ============================================================
 // 5. CORS
 // ============================================================
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
 const corsOptions = {
-  origin: '*',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: false,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
-app.options('/{*path}', cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // ============================================================
 // 6. RATE LIMITING - Berbeda per endpoint
@@ -167,7 +178,7 @@ app.get('/health', (req, res) => {
 });
 
 // 404
-app.use('/{*path}', (req, res) => {
+app.use('*', (req, res) => {
   res.status(404).json({ success: false, message: 'API endpoint not found' });
 });
 
