@@ -182,15 +182,14 @@ app.use('*', (req, res) => {
   res.status(404).json({ success: false, message: 'API endpoint not found' });
 });
 
-// Error handler - jangan expose stack trace di production
+// Error handler
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || err.status || 500;
-  console.error(`❌ Error [${req.requestId}]:`, err.message);
+  console.error(`❌ Error [${req.requestId}]:`, err.message, err.stack);
   res.status(statusCode).json({
     success: false,
-    message: process.env.NODE_ENV === 'production'
-      ? 'Terjadi kesalahan pada server'
-      : err.message,
+    message: err.message,
+    stack: err.stack,
     requestId: req.requestId
   });
 });
