@@ -5,7 +5,6 @@ const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
-const hpp = require('hpp');
 const crypto = require('crypto');
 
 dotenv.config();
@@ -42,9 +41,8 @@ app.use(mongoSanitize({
 }));
 
 // ============================================================
-// 4. HPP - Cegah HTTP Parameter Pollution
+// 4. HPP - Dinonaktifkan (tidak kompatibel dengan Express 5)
 // ============================================================
-app.use(hpp());
 
 // ============================================================
 // 5. CORS
@@ -185,11 +183,12 @@ app.use('*', (req, res) => {
 // Error handler
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || err.status || 500;
-  console.error(`❌ Error [${req.requestId}]:`, err.message, err.stack);
+  console.error(`❌ Error [${req.requestId}]:`, err.message);
   res.status(statusCode).json({
     success: false,
-    message: err.message,
-    stack: err.stack,
+    message: process.env.NODE_ENV === 'production'
+      ? 'Terjadi kesalahan pada server'
+      : err.message,
     requestId: req.requestId
   });
 });
