@@ -4,6 +4,8 @@ const dotenv = require('dotenv');
 const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const hpp = require('hpp');
 const crypto = require('crypto');
 
 dotenv.config();
@@ -30,28 +32,19 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // ============================================================
-// 3. NOSQL INJECTION PROTECTION - Manual (express-mongo-sanitize tidak kompatibel Express 5)
+// 3. NOSQL INJECTION PROTECTION
 // ============================================================
-app.use((req, res, next) => {
-  const sanitize = (obj) => {
-    if (obj && typeof obj === 'object') {
-      for (const key in obj) {
-        if (key.startsWith('$') || key.includes('.')) {
-          console.warn(`⚠️ NoSQL injection attempt blocked: ${key}`);
-          delete obj[key];
-        } else if (typeof obj[key] === 'object') {
-          sanitize(obj[key]);
-        }
-      }
-    }
-  };
-  if (req.body) sanitize(req.body);
-  next();
-});
+app.use(mongoSanitize({
+  replaceWith: '_',
+  onSanitize: ({ req, key }) => {
+    console.warn(`⚠️ NoSQL injection attempt blocked: ${key}`);
+  }
+}));
 
 // ============================================================
-// 4. HPP - Dinonaktifkan (tidak kompatibel dengan Express 5)
+// 4. HPP - Cegah HTTP Parameter Pollution
 // ============================================================
+app.use(hpp());
 
 // ============================================================
 // 5. CORS
