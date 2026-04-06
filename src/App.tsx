@@ -17,6 +17,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ToastProvider } from './components/common/Toast';
 import Onboarding from './components/common/Onboarding';
 import AIChat from './components/common/AIChat';
+import AdminDashboard from './components/admin/AdminDashboard';
 
 function App() {
   const { activeTab, isAuthenticated } = useStore();
@@ -47,6 +48,8 @@ function App() {
         return <AboutUs />;
       case 'contact':
         return <Contact />;
+      case 'admin':
+        return <AdminDashboard />;
       case 'notifikasi':
         return (
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">

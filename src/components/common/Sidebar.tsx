@@ -6,7 +6,8 @@ import {
   Settings, 
   LogOut,
   UserCircle,
-  BarChart3
+  BarChart3,
+  ShieldCheck
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { clsx, type ClassValue } from 'clsx';
@@ -26,6 +27,7 @@ const Sidebar = () => {
     { id: 'ahsp', label: 'AHSP Database', icon: Database },
     { id: 'buku-harian', label: 'Buku Harian', icon: BookOpen },
     { id: 'manajemen', label: 'Manajemen Proyek', icon: Settings },
+    ...(userRole === 'admin' ? [{ id: 'admin', label: 'Control Panel', icon: ShieldCheck }] : []),
   ];
 
   return (
