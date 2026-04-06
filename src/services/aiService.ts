@@ -30,7 +30,7 @@ class AIService {
     this.language = language;
     const apiKey = typeof process !== 'undefined' && process.env?.VITE_CLAUDE_API_KEY 
       ? process.env.VITE_CLAUDE_API_KEY 
-      : (import.meta.env?.VITE_CLAUDE_API_KEY || '');
+      : (import.meta.env?.VITE_CLAUDE_API_KEY || import.meta.env?.VITE_GEMINI_API_KEY || '');
     this.claudeApiKey = claudeApiKey || apiKey;
   }
 
@@ -56,6 +56,12 @@ class AIService {
     // If FAQ match found, use it with context awareness
     if (matchedFAQ) {
       return this.formatFAQResponse(matchedFAQ);
+    }
+
+    // Try Gemini first (free), then Claude, then fallback
+    const geminiKey = import.meta.env?.VITE_GEMINI_API_KEY || '';
+    if (geminiKey) {
+      return await this.getGeminiResponse(userInput, context, geminiKey);
     }
 
     // If Claude API available, use it for advanced responses
@@ -115,6 +121,42 @@ class AIService {
     });
 
     return recommendations;
+  }
+
+  private async getGeminiResponse(userInput: string, context: UserContext | null, apiKey: string): Promise<AIResponse> {
+    try {
+      const systemPrompt = this.buildSystemPrompt(context);
+      const fullPrompt = `${systemPrompt}\n\nUser: ${userInput}`;
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: fullPrompt }] }],
+            generationConfig: { maxOutputTokens: 500, temperature: 0.7 }
+          })
+        }
+      );
+
+      if (!response.ok) throw new Error(`Gemini API Error: ${response.statusText}`);
+
+      const data = await response.json();
+      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+      if (!aiText) throw new Error('Empty response from Gemini');
+
+      return {
+        text: aiText,
+        type: 'answer',
+        recommendations: this.getRecommendations('General'),
+        language: this.language
+      };
+    } catch (error) {
+      console.error('Gemini API Error:', error);
+      return this.getFallbackResponse(userInput, context);
+    }
   }
 
   private async getClaudeResponse(userInput: string, context: UserContext | null): Promise<AIResponse> {

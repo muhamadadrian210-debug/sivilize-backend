@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { type RABItem } from '../../store/useStore';
 import { formatCurrency } from '../../utils/calculations';
+import { AHSP_TEMPLATES } from '../../data/ahsp';
+import { getMaterialPricesByGrade, type MaterialGrade } from '../../data/prices';
 
 interface GroupedRABDisplayProps {
   items: RABItem[];
@@ -9,6 +11,8 @@ interface GroupedRABDisplayProps {
   onDeleteItem: (index: number) => void;
   onAddItem: () => void;
   onSelectTeam: (itemId: string) => void;
+  cityId?: string;
+  grade?: MaterialGrade;
 }
 
 interface GroupedData {
@@ -23,9 +27,61 @@ const GroupedRABDisplay = ({
   onUpdateItem,
   onDeleteItem,
   onAddItem,
-  onSelectTeam
+  onSelectTeam,
+  cityId = '',
+  grade = 'B',
 }: GroupedRABDisplayProps) => {
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+  const [tooltipItemId, setTooltipItemId] = useState<string | null>(null);
+
+  // Hitung breakdown material vs upah untuk sebuah item
+  const getBreakdown = (item: RABItem) => {
+    const template = AHSP_TEMPLATES.find(t => t.name === item.name);
+    if (!template) return null;
+
+    const matPrices = getMaterialPricesByGrade(cityId, grade);
+    const laborPrices: Record<string, number> = {
+      'Pekerja': 150000, 'Tukang Batu': 200000, 'Tukang Besi': 200000,
+      'Tukang Cat': 185000, 'Tukang Kayu': 200000, 'Tukang Pipa': 195000,
+      'Tukang Listrik': 210000, 'Kepala Tukang': 230000, 'Mandor': 270000,
+    };
+
+    const matCost = template.materials.reduce((acc, m) => acc + m.coeff * (matPrices[m.name] || 0), 0);
+    const laborCost = template.laborCoefficients.reduce((acc, l) => acc + l.coeff * (laborPrices[l.name] || 0), 0);
+
+    return {
+      material: matCost,
+      upah: laborCost,
+      total: matCost + laborCost,
+      details: [
+        ...template.materials.map(m => ({
+          label: `${m.name} (${m.coeff} ${m.unit})`,
+          value: m.coeff * (matPrices[m.name] || 0),
+          type: 'material'
+        })),
+        ...template.laborCoefficients.map(l => ({
+          label: `${l.name} (${l.coeff} OH)`,
+          value: l.coeff * (laborPrices[l.name] || 0),
+          type: 'upah'
+        })),
+      ]
+    };
+  };
+
+  // Hitung total upah dari semua item
+  const totalUpah = items.reduce((acc, item) => {
+    const template = AHSP_TEMPLATES.find(t => t.name === item.name);
+    if (!template) return acc;
+    const laborPrices: Record<string, number> = {
+      'Pekerja': 150000, 'Tukang Batu': 200000, 'Tukang Besi': 200000,
+      'Tukang Cat': 185000, 'Tukang Kayu': 200000, 'Tukang Pipa': 195000,
+      'Tukang Listrik': 210000, 'Kepala Tukang': 230000, 'Mandor': 270000,
+    };
+    const laborCost = template.laborCoefficients.reduce((s, l) => s + l.coeff * (laborPrices[l.name] || 0), 0);
+    return acc + laborCost * item.volume;
+  }, 0);
+
+  const totalMaterial = items.reduce((acc, item) => acc + item.total, 0) - totalUpah;
 
   // Group items by category
   const groupItems = (): GroupedData[] => {
@@ -154,8 +210,48 @@ const GroupedRABDisplay = ({
                               />
                             </td>
                             <td className="px-4 py-3 text-text-secondary text-sm">{item.unit}</td>
-                            <td className="px-4 py-3 text-white text-sm font-mono">
-                              {formatCurrency(item.unitPrice)}
+                            <td className="px-4 py-3 text-white text-sm font-mono relative">
+                              <div className="flex items-center gap-1">
+                                <span>{formatCurrency(item.unitPrice)}</span>
+                                <button
+                                  onClick={() => setTooltipItemId(tooltipItemId === item.id ? null : item.id)}
+                                  className="text-text-secondary hover:text-primary transition-colors"
+                                >
+                                  <Info size={13} />
+                                </button>
+                              </div>
+                              {tooltipItemId === item.id && (() => {
+                                const bd = getBreakdown(item);
+                                return bd ? (
+                                  <div className="absolute left-0 top-10 z-50 w-72 bg-[#121826] border border-primary/30 rounded-xl p-4 shadow-2xl text-xs">
+                                    <p className="text-primary font-bold uppercase tracking-widest mb-3">Breakdown Harga Satuan</p>
+                                    <div className="space-y-1 mb-3">
+                                      <p className="text-text-secondary font-bold uppercase text-[10px] tracking-widest">Material</p>
+                                      {bd.details.filter(d => d.type === 'material').map((d, i) => (
+                                        <div key={i} className="flex justify-between">
+                                          <span className="text-text-secondary">{d.label}</span>
+                                          <span className="text-white">{formatCurrency(d.value)}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div className="space-y-1 mb-3">
+                                      <p className="text-yellow-400 font-bold uppercase text-[10px] tracking-widest">Jasa Tukang (Upah)</p>
+                                      {bd.details.filter(d => d.type === 'upah').map((d, i) => (
+                                        <div key={i} className="flex justify-between">
+                                          <span className="text-text-secondary">{d.label}</span>
+                                          <span className="text-yellow-400">{formatCurrency(d.value)}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div className="border-t border-border pt-2 flex justify-between font-bold">
+                                      <span className="text-white">Total/satuan</span>
+                                      <span className="text-primary">{formatCurrency(bd.total)}</span>
+                                    </div>
+                                    <p className="text-text-secondary text-[10px] mt-2 italic">Harga sudah termasuk material + jasa tukang</p>
+                                  </div>
+                                ) : null;
+                              })()}
+                            </td>
                             </td>
                             <td className="px-4 py-3 text-white font-bold text-sm">
                               {formatCurrency(item.total)}
@@ -204,6 +300,33 @@ const GroupedRABDisplay = ({
                 {formatCurrency(totalAll)}
               </span>
             </div>
+          </div>
+
+          {/* Rekap Material vs Jasa Tukang */}
+          <div className="glass-card p-5 border border-border/50">
+            <p className="text-text-secondary text-xs font-bold uppercase tracking-widest mb-4">
+              Rekap Komponen Biaya
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-background/50 rounded-xl p-4 border border-border">
+                <p className="text-text-secondary text-xs uppercase tracking-widest mb-1">Biaya Material</p>
+                <p className="text-white font-bold text-lg">{formatCurrency(Math.max(0, totalMaterial))}</p>
+                <p className="text-text-secondary text-[10px] mt-1">Bahan bangunan, material</p>
+              </div>
+              <div className="bg-yellow-500/5 rounded-xl p-4 border border-yellow-500/20">
+                <p className="text-yellow-400 text-xs uppercase tracking-widest mb-1">Jasa Tukang (Upah)</p>
+                <p className="text-yellow-400 font-bold text-lg">{formatCurrency(Math.max(0, totalUpah))}</p>
+                <p className="text-text-secondary text-[10px] mt-1">Pekerja, tukang, mandor</p>
+              </div>
+              <div className="bg-primary/5 rounded-xl p-4 border border-primary/20">
+                <p className="text-primary text-xs uppercase tracking-widest mb-1">Total RAB</p>
+                <p className="text-primary font-bold text-lg">{formatCurrency(totalAll)}</p>
+                <p className="text-text-secondary text-[10px] mt-1">Material + Jasa (belum PPN)</p>
+              </div>
+            </div>
+            <p className="text-text-secondary text-[10px] mt-4 italic">
+              ⓘ Harga satuan setiap pekerjaan sudah mencakup biaya material DAN jasa tukang sesuai koefisien AHSP/SNI. Klik ikon ⓘ di kolom "Harga Satuan" untuk melihat rincian per item.
+            </p>
           </div>
         </div>
       )}
