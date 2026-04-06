@@ -12,6 +12,9 @@ dotenv.config();
 
 const app = express();
 
+// Trust proxy untuk Vercel
+app.set('trust proxy', 1);
+
 // ============================================================
 // 1. HELMET - Security Headers (XSS, Clickjacking, MIME, dll)
 // ============================================================
@@ -133,8 +136,9 @@ const connectDB = async () => {
       return;
     }
     await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
+      connectTimeoutMS: 10000,
     });
     console.log('✅ MongoDB Connected');
   } catch (err) {
