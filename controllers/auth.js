@@ -156,3 +156,16 @@ const sendTokenResponse = (user, statusCode, res) => {
     },
   });
 };
+
+// @desc    Logout user (blacklist token)
+// @route   POST /api/auth/logout
+// @access  Private
+exports.logout = async (req, res, next) => {
+  try {
+    const { blacklistToken } = require('../middleware/auth');
+    blacklistToken(req.token);
+    res.status(200).json({ success: true, message: 'Logout berhasil.' });
+  } catch (err) {
+    next(err);
+  }
+};

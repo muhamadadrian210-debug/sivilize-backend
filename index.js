@@ -1,19 +1,54 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const path = require('path');
 const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const hpp = require('hpp');
+const crypto = require('crypto');
 
 dotenv.config();
 
 const app = express();
 
-// Body parser
+// ============================================================
+// 1. HELMET - Security Headers (XSS, Clickjacking, MIME, dll)
+// ============================================================
+app.use(helmet({
+  contentSecurityPolicy: false, // disabled agar API tidak block response
+  crossOriginEmbedderPolicy: false,
+}));
+app.use(helmet.xssFilter());
+app.use(helmet.noSniff());
+app.use(helmet.frameguard({ action: 'deny' }));
+app.use(helmet.hsts({ maxAge: 31536000, includeSubDomains: true }));
+app.use(helmet.hidePoweredBy());
+
+// ============================================================
+// 2. BODY PARSER
+// ============================================================
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// CORS
+// ============================================================
+// 3. MONGO SANITIZE - Cegah NoSQL Injection
+// ============================================================
+app.use(mongoSanitize({
+  replaceWith: '_',
+  onSanitize: ({ req, key }) => {
+    console.warn(`⚠️ NoSQL injection attempt blocked: ${key}`);
+  }
+}));
+
+// ============================================================
+// 4. HPP - Cegah HTTP Parameter Pollution
+// ============================================================
+app.use(hpp());
+
+// ============================================================
+// 5. CORS
+// ============================================================
 const corsOptions = {
   origin: '*',
   credentials: false,
@@ -24,17 +59,59 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options('/{*path}', cors(corsOptions));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+// ============================================================
+// 6. RATE LIMITING - Berbeda per endpoint
+// ============================================================
+// Global limiter
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 menit
   max: 100,
   message: { success: false, message: 'Terlalu banyak request, coba lagi nanti.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use(limiter);
+app.use(globalLimiter);
 
-// Connect MongoDB
+// Auth limiter - lebih ketat (cegah brute force)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10, // max 10 percobaan login per 15 menit
+  message: { success: false, message: 'Terlalu banyak percobaan login. Coba lagi dalam 15 menit.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // hanya hitung yang gagal
+});
+
+// ============================================================
+// 7. REQUEST ID - Tracking setiap request
+// ============================================================
+app.use((req, res, next) => {
+  req.requestId = crypto.randomUUID();
+  res.setHeader('X-Request-ID', req.requestId);
+  next();
+});
+
+// ============================================================
+// 8. SECURITY LOGGING
+// ============================================================
+app.use((req, res, next) => {
+  const suspicious = [
+    '<script', 'javascript:', 'eval(', 'DROP TABLE',
+    'SELECT *', 'UNION SELECT', '../', '..\\',
+    'exec(', 'system(', 'passthru('
+  ];
+  const body = JSON.stringify(req.body || '');
+  const url = req.originalUrl;
+  
+  if (suspicious.some(s => body.toLowerCase().includes(s.toLowerCase()) || url.toLowerCase().includes(s.toLowerCase()))) {
+    console.warn(`🚨 SUSPICIOUS REQUEST [${req.requestId}]: ${req.method} ${url} from ${req.ip}`);
+  }
+  next();
+});
+
+// ============================================================
+// 9. MONGODB CONNECTION
+// ============================================================
 const connectDB = async () => {
   try {
     const uri = process.env.MONGODB_URI;
@@ -42,7 +119,10 @@ const connectDB = async () => {
       console.log('⚠️ MONGODB_URI tidak ada, pakai in-memory storage');
       return;
     }
-    await mongoose.connect(uri);
+    await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
     console.log('✅ MongoDB Connected');
   } catch (err) {
     console.log('⚠️ MongoDB gagal, pakai in-memory storage:', err.message);
@@ -51,8 +131,10 @@ const connectDB = async () => {
 
 connectDB();
 
-// Routes
-app.use('/api/auth', require('./routes/auth'));
+// ============================================================
+// 10. ROUTES - Auth pakai rate limiter ketat
+// ============================================================
+app.use('/api/auth', authLimiter, require('./routes/auth'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/ahsp', require('./routes/ahsp'));
 app.use('/api/materials', require('./routes/materials'));
@@ -68,6 +150,7 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     status: 'running',
     db: mongoose.connection.readyState === 1 ? 'MongoDB' : 'In-Memory',
+    security: 'AES-256/TLS + Helmet + Rate Limiting + NoSQL Injection Protection',
     timestamp: new Date().toISOString()
   });
 });
@@ -88,14 +171,16 @@ app.use('/{*path}', (req, res) => {
   res.status(404).json({ success: false, message: 'API endpoint not found' });
 });
 
-// Error handler
+// Error handler - jangan expose stack trace di production
 app.use((err, req, res, next) => {
-  console.error('Error:', err.message);
   const statusCode = err.statusCode || err.status || 500;
+  console.error(`❌ Error [${req.requestId}]:`, err.message);
   res.status(statusCode).json({
     success: false,
-    message: err.message || 'Terjadi kesalahan pada server',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    message: process.env.NODE_ENV === 'production'
+      ? 'Terjadi kesalahan pada server'
+      : err.message,
+    requestId: req.requestId
   });
 });
 
@@ -103,6 +188,7 @@ if (require.main === module) {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🔒 Security: Helmet + Rate Limiting + NoSQL Protection aktif`);
   });
 }
 

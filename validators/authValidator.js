@@ -6,32 +6,38 @@ const registerSchema = joi.object({
     .required()
     .min(2)
     .max(50)
+    .pattern(/^[a-zA-Z\s]+$/)
     .messages({
       'string.empty': 'Nama diperlukan',
       'string.min': 'Nama minimal 2 karakter',
-      'string.max': 'Nama maksimal 50 karakter'
+      'string.max': 'Nama maksimal 50 karakter',
+      'string.pattern.base': 'Nama hanya boleh huruf dan spasi'
     }),
-  
+
   email: joi.string()
     .trim()
-    .email()
+    .email({ tlds: { allow: false } })
     .required()
+    .max(100)
     .messages({
       'string.empty': 'Email diperlukan',
       'string.email': 'Format email tidak valid',
-      'any.required': 'Email adalah required'
+      'any.required': 'Email diperlukan'
     }),
-  
+
+  // Password kuat: min 8 karakter, huruf besar, huruf kecil, angka, simbol
   password: joi.string()
     .required()
-    .min(6)
+    .min(8)
     .max(100)
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_\-#])[A-Za-z\d@$!%*?&_\-#]{8,}$/)
     .messages({
       'string.empty': 'Password diperlukan',
-      'string.min': 'Password minimal 6 karakter',
-      'any.required': 'Password adalah required'
+      'string.min': 'Password minimal 8 karakter',
+      'string.pattern.base': 'Password harus mengandung huruf besar, huruf kecil, angka, dan simbol (@$!%*?&_-#)',
+      'any.required': 'Password diperlukan'
     }),
-  
+
   role: joi.string()
     .trim()
     .valid('user', 'admin', 'client')
@@ -44,13 +50,13 @@ const registerSchema = joi.object({
 const loginSchema = joi.object({
   email: joi.string()
     .trim()
-    .email()
+    .email({ tlds: { allow: false } })
     .required()
     .messages({
       'string.empty': 'Email diperlukan',
       'string.email': 'Format email tidak valid'
     }),
-  
+
   password: joi.string()
     .required()
     .messages({
@@ -72,7 +78,4 @@ const validateLogin = (data) => {
   });
 };
 
-module.exports = {
-  validateRegister,
-  validateLogin
-};
+module.exports = { validateRegister, validateLogin };
