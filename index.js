@@ -126,6 +126,8 @@ app.use((req, res, next) => {
 const connectDB = async () => {
   try {
     const uri = process.env.MONGODB_URI;
+    console.log('🔍 MONGODB_URI exists:', !!uri);
+    console.log('🔍 MONGODB_URI prefix:', uri ? uri.substring(0, 30) : 'NONE');
     if (!uri) {
       console.log('⚠️ MONGODB_URI tidak ada, pakai in-memory storage');
       return;
