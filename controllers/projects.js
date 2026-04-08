@@ -16,7 +16,7 @@ exports.getProjects = async (req, res, next) => {
     if (req.user.role === 'admin') {
       allProjects = mockStorage.find('projects');
     } else {
-      allProjects = mockStorage.find('projects', { user: req.user._id });
+      allProjects = mockStorage.find('projects', { user: String(req.user._id || req.user.id) });
     }
 
     const total = allProjects.length;
@@ -51,7 +51,7 @@ exports.getProject = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Project tidak ditemukan' });
     }
 
-    if (project.user !== req.user._id && req.user.role !== 'admin') {
+    if (project.user !== String(req.user._id || req.user.id) && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Tidak authorized' });
     }
 
@@ -79,7 +79,7 @@ exports.createProject = async (req, res, next) => {
       });
     }
 
-    validatedData.user = req.user._id;
+    validatedData.user = String(req.user._id || req.user.id);
     const sanitized = sanitizeObject(validatedData);
     const project = mockStorage.create('projects', sanitized);
 
@@ -103,7 +103,7 @@ exports.updateProject = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Project tidak ditemukan' });
     }
 
-    if (project.user !== req.user._id && req.user.role !== 'admin') {
+    if (project.user !== String(req.user._id || req.user.id) && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Tidak authorized' });
     }
 
@@ -140,7 +140,7 @@ exports.deleteProject = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Project tidak ditemukan' });
     }
 
-    if (project.user !== req.user._id && req.user.role !== 'admin') {
+    if (project.user !== String(req.user._id || req.user.id) && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Tidak authorized' });
     }
 
@@ -167,7 +167,7 @@ exports.addProjectVersion = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Project tidak ditemukan' });
     }
 
-    if (project.user !== req.user._id && req.user.role !== 'admin') {
+    if (project.user !== String(req.user._id || req.user.id) && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Tidak authorized' });
     }
 

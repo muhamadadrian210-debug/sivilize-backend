@@ -72,7 +72,7 @@ exports.getLogs = async (req, res, next) => {
 // @access  Private
 exports.createLog = async (req, res, next) => {
   try {
-    req.body.user = req.user._id;
+    req.body.user = String(req.user._id || req.user.id);
     req.body.project = req.body.project || req.query.projectId;
 
     // Validate basic required fields

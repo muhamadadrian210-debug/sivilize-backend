@@ -11,72 +11,65 @@ const projectSchema = joi.object({
       'string.min': 'Nama minimal 3 karakter',
       'string.max': 'Nama maksimal 100 karakter'
     }),
-  
-  description: joi.string()
-    .trim()
-    .max(2000)
-    .allow('')
-    .messages({
-      'string.max': 'Deskripsi maksimal 2000 karakter'
-    }),
-  
+
   location: joi.string()
     .trim()
     .max(200)
     .allow('')
+    .optional()
     .messages({
       'string.max': 'Lokasi maksimal 200 karakter'
     }),
-  
+
   type: joi.string()
     .trim()
-    .valid('residensial', 'komersial', 'industri', 'infrastruktur')
+    .valid('rumah', 'ruko', 'gedung')
     .optional()
     .messages({
-      'any.only': 'Tipe project tidak valid'
+      'any.only': 'Tipe project hanya bisa: rumah, ruko, atau gedung'
     }),
-  
+
+  floors: joi.number()
+    .integer()
+    .min(1)
+    .optional()
+    .messages({
+      'number.base': 'Jumlah lantai harus berupa angka',
+      'number.min': 'Jumlah lantai minimal 1'
+    }),
+
+  dimensions: joi.array()
+    .items(joi.object({
+      length: joi.number().positive().required(),
+      width: joi.number().positive().required(),
+      height: joi.number().positive().required()
+    }))
+    .optional(),
+
   status: joi.string()
     .trim()
-    .valid('planning', 'in_progress', 'completed', 'on_hold')
+    .valid('draft', 'ongoing', 'completed')
     .optional()
     .messages({
-      'any.only': 'Status tidak valid'
+      'any.only': 'Status hanya bisa: draft, ongoing, atau completed'
     }),
-  
-  startDate: joi.date()
-    .required()
-    .messages({
-      'date.base': 'Format tanggal mulai tidak valid',
-      'any.required': 'Tanggal mulai diperlukan'
-    }),
-  
-  endDate: joi.date()
-    .min(joi.ref('startDate'))
-    .required()
-    .messages({
-      'date.base': 'Format tanggal selesai tidak valid',
-      'date.min': 'Tanggal selesai harus setelah tanggal mulai',
-      'any.required': 'Tanggal selesai diperlukan'
-    }),
-  
-  budget: joi.number()
-    .positive()
-    .required()
-    .messages({
-      'number.base': 'Budget harus berupa angka',
-      'number.positive': 'Budget harus lebih dari 0',
-      'any.required': 'Budget diperlukan'
-    }),
-  
-  manpower: joi.number()
-    .positive()
-    .allow(0)
-    .optional()
-    .messages({
-      'number.base': 'Jumlah manpower harus berupa angka',
-      'number.positive': 'Jumlah manpower harus 0 atau lebih'
-    })
+
+  versions: joi.array().optional(),
+
+  // Extra fields from frontend store (allowed but not required)
+  materialGrade: joi.string().valid('A', 'B', 'C').optional(),
+  roofModel: joi.string().optional(),
+  bedroomCount: joi.number().min(0).optional(),
+  bathroomCount: joi.number().min(0).optional(),
+  doorCount: joi.number().min(0).optional(),
+  windowCount: joi.number().min(0).optional(),
+  waterPointCount: joi.number().min(0).optional(),
+  drainPointCount: joi.number().min(0).optional(),
+  drinkingPointCount: joi.number().min(0).optional(),
+  lightPointCount: joi.number().min(0).optional(),
+  socketPointCount: joi.number().min(0).optional(),
+  toiletType: joi.string().valid('duduk', 'jongkok').optional(),
+  dailyLogs: joi.array().optional()
 });
 
 const validateProject = (data) => {

@@ -42,7 +42,7 @@ exports.getAHSP = async (req, res, next) => {
 // @access  Private (Admin/User)
 exports.createAHSP = async (req, res, next) => {
   try {
-    req.body.createdBy = req.user._id;
+    req.body.createdBy = String(req.user._id || req.user.id);
     const ahsp = mockStorage.create('ahsp', req.body);
 
     res.status(201).json({

@@ -72,20 +72,20 @@ const generateRABPDF = (project, items, summary, financials) => {
   // Add content to PDF (simplified for demo)
   doc.fontSize(20).text('SIVILIZE HUB PRO - RAB Report', { align: 'center' });
   doc.moveDown();
-  doc.fontSize(14).text(`Project Name: ${project.name}`);
-  doc.text(`Location: ${project.location}`);
+  doc.fontSize(14).text(`Project Name: ${project?.name || '-'}`);
+  doc.text(`Location: ${project?.location || '-'}`);
   doc.moveDown();
 
   // Table header
   doc.fontSize(12).text('No | Item Name | Volume | Unit | Unit Price | Total');
   doc.moveDown(0.5);
 
-  items.forEach((item, index) => {
-    doc.text(`${index + 1} | ${item.name} | ${item.volume} | ${item.unit} | ${item.unitPrice} | ${item.total}`);
+  (items || []).forEach((item, index) => {
+    doc.text(`${index + 1} | ${item.name || '-'} | ${item.volume || 0} | ${item.unit || '-'} | ${item.unitPrice || 0} | ${item.total || 0}`);
   });
 
   doc.moveDown();
-  doc.text(`Grand Total: ${summary.grandTotal}`);
+  doc.text(`Grand Total: ${summary?.grandTotal || 0}`);
 
   doc.end();
   return doc;
@@ -337,6 +337,5 @@ const generateRABExcel = async (project, items, summary, financials) => {
 module.exports = {
   generateRABPDF,
   generateRABExcel,
-  groupRABItems,
   formatRupiah
 };

@@ -129,7 +129,7 @@ exports.getMe = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: {
-        id: user._id,
+        id: user._id || user.id,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -141,7 +141,8 @@ exports.getMe = async (req, res, next) => {
 };
 
 const sendTokenResponse = (user, statusCode, res) => {
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+  const userId = user._id || user.id;
+  const token = jwt.sign({ id: userId }, process.env.JWT_SECRET, {
     expiresIn: '30d',
   });
 
@@ -149,7 +150,7 @@ const sendTokenResponse = (user, statusCode, res) => {
     success: true,
     token,
     data: {
-      id: user._id,
+      id: userId,
       name: user.name,
       email: user.email,
       role: user.role,
