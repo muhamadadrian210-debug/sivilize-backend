@@ -668,7 +668,10 @@ const RABCalculator = () => {
 
               <div className="flex items-center gap-3">
                 <button 
-                  onClick={() => exportToPDF(projectData, rabItems, financials, materialGrade)}
+                  onClick={() => exportToPDF(projectData, rabItems, financials, materialGrade, {
+                    preparedBy: user?.name,
+                    companyName: 'SIVILIZE HUB PRO',
+                  })}
                   className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl text-sm font-bold hover:bg-red-500/20 transition-all"
                 >
                   <FileDown size={16} />

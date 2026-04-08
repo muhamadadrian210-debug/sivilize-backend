@@ -78,7 +78,7 @@ app.options('*', cors(corsOptions));
 // ============================================================
 // Global limiter
 const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 menit
+  windowMs: 15 * 60 * 1000,
   max: 100,
   message: { success: false, message: 'Terlalu banyak request, coba lagi nanti.' },
   standardHeaders: true,
@@ -89,11 +89,36 @@ app.use(globalLimiter);
 // Auth limiter - lebih ketat (cegah brute force)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10, // max 10 percobaan login per 15 menit
+  max: 10,
   message: { success: false, message: 'Terlalu banyak percobaan login. Coba lagi dalam 15 menit.' },
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true, // hanya hitung yang gagal
+  skipSuccessfulRequests: true,
+});
+
+// Export limiter - cegah scraping massal
+const exportLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 jam
+  max: 20,
+  message: { success: false, message: 'Batas export tercapai. Coba lagi dalam 1 jam.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// ============================================================
+// 6b. ANTI-SCRAPING - User-Agent & Fingerprint check
+// ============================================================
+app.use((req, res, next) => {
+  const ua = req.headers['user-agent'] || '';
+  const suspiciousAgents = ['python-requests', 'curl/', 'wget/', 'scrapy', 'bot', 'spider', 'crawl'];
+  
+  // Block obvious scrapers pada endpoint sensitif
+  if (req.path.startsWith('/api/projects') || req.path.startsWith('/api/export')) {
+    if (suspiciousAgents.some(s => ua.toLowerCase().includes(s))) {
+      return res.status(403).json({ success: false, message: 'Akses ditolak.' });
+    }
+  }
+  next();
 });
 
 // ============================================================
@@ -157,7 +182,7 @@ app.use('/api/ahsp', require('./routes/ahsp'));
 app.use('/api/materials', require('./routes/materials'));
 app.use('/api/logs', require('./routes/logs'));
 app.use('/api/calculate-rab', require('./routes/calculation'));
-app.use('/api/export', require('./routes/export'));
+app.use('/api/export', exportLimiter, require('./routes/export'));
 
 // Root
 app.get('/', (req, res) => {

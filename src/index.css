@@ -55,3 +55,81 @@
 .animate-slide-up {
   animation: slide-up 0.25s ease-out;
 }
+
+/* ============================================================
+   MOBILE-FIRST / TOUCH-FRIENDLY — Poin 5 PUPR Upgrade
+   Semua interactive element minimal 44x44px (Apple HIG / WCAG 2.5.5)
+   ============================================================ */
+
+/* Semua button, link, input minimal 44px touch target */
+button,
+[role="button"],
+a,
+input[type="checkbox"],
+input[type="radio"],
+select {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Exception: icon-only buttons yang kecil — pakai padding untuk perbesar area sentuh */
+button.icon-btn {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Input fields — lebih besar di mobile */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+textarea {
+  min-height: 44px;
+}
+
+/* Checkbox & radio — perbesar area klik */
+input[type="checkbox"],
+input[type="radio"] {
+  min-height: 20px;
+  min-width: 20px;
+  cursor: pointer;
+}
+
+/* Prevent zoom on input focus di iOS */
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Sidebar collapse di mobile */
+@media (max-width: 768px) {
+  main.pl-64 {
+    padding-left: 0 !important;
+  }
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent text selection saat swipe di mobile */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Auto-save indicator animation */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
