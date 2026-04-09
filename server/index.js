@@ -156,26 +156,32 @@ app.use((req, res, next) => {
 // 9. MONGODB CONNECTION
 // ============================================================
 const connectDB = async () => {
-  try {
-    const uri = process.env.MONGODB_URI;
-    console.log('🔍 MONGODB_URI exists:', !!uri);
-    console.log('🔍 MONGODB_URI prefix:', uri ? uri.substring(0, 30) : 'NONE');
-    if (!uri) {
-      console.log('⚠️ MONGODB_URI tidak ada, pakai in-memory storage');
-      return;
-    }
-    await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-      connectTimeoutMS: 10000,
-      maxPoolSize: 10,
-      retryWrites: true,
-      w: 'majority'
-    });
-    console.log('✅ MongoDB Connected');
-  } catch (err) {
-    console.log('⚠️ MongoDB gagal, pakai in-memory storage:', err.message);
+  const uri = process.env.MONGODB_URI;
+  console.log('🔍 MONGODB_URI exists:', !!uri);
+  console.log('🔍 MONGODB_URI prefix:', uri ? uri.substring(0, 40) : 'NONE');
+
+  if (!uri) {
+    console.log('⚠️ MONGODB_URI tidak ada, pakai in-memory storage');
+    return;
   }
+
+  // Retry logic — Vercel cold start kadang butuh beberapa detik
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      console.log(`🔄 MongoDB connect attempt ${attempt}/3...`);
+      await mongoose.connect(uri, {
+        serverSelectionTimeoutMS: 15000,
+        socketTimeoutMS: 45000,
+        connectTimeoutMS: 15000,
+      });
+      console.log('✅ MongoDB Connected!');
+      return;
+    } catch (err) {
+      console.log(`❌ Attempt ${attempt} failed: ${err.message}`);
+      if (attempt < 3) await new Promise(r => setTimeout(r, 2000));
+    }
+  }
+  console.log('⚠️ Semua attempt gagal, pakai in-memory storage');
 };
 
 // Connection event handlers
