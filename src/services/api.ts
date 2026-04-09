@@ -1,8 +1,8 @@
 import axios from 'axios';
 import type { Project, User } from '../store/useStore';
 
-// Read API URL from environment variable
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Backend API URL - Using Vercel deployment
+const API_URL = 'https://server-1rimpvmey-muhamadadrian210-2602s-projects.vercel.app/api';
 
 const api = axios.create({
   baseURL: API_URL,

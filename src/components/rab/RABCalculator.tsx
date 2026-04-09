@@ -17,7 +17,8 @@ import {
   Upload,
   AlertCircle,
   Users,
-  Clock
+  Clock,
+  Lightbulb
 } from 'lucide-react';
 import { useStore, type RABItem, type Project } from '../../store/useStore';
 import { AHSP_TEMPLATES } from '../../data/ahsp';
@@ -45,6 +46,76 @@ import MaterialSummary from './MaterialSummary';
 import ProjectTimeline from './ProjectTimeline';
 import GroupedRABDisplay from './GroupedRABDisplay';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// ── Data Jenis Tanah & Rekomendasi Pondasi ──────────────────
+const SOIL_TYPES = [
+  { id: 'keras',   label: 'Tanah Keras',   desc: 'Daya dukung tinggi (>2 kg/cm²), stabil' },
+  { id: 'sedang',  label: 'Tanah Sedang',  desc: 'Daya dukung menengah (1–2 kg/cm²)' },
+  { id: 'lunak',   label: 'Tanah Lunak',   desc: 'Daya dukung rendah (<1 kg/cm²), lempung' },
+  { id: 'gambut',  label: 'Tanah Gambut',  desc: 'Organik, sangat lunak, mudah ambles' },
+  { id: 'pasir',   label: 'Tanah Pasir',   desc: 'Lepas, perlu pemadatan, daya dukung bervariasi' },
+  { id: 'berbatu', label: 'Tanah Berbatu', desc: 'Daya dukung sangat tinggi, ideal untuk pondasi' },
+] as const;
+
+const FOUNDATION_TYPES = [
+  { id: 'batu-kali',     label: 'Pondasi Batu Kali',    desc: 'Untuk bangunan 1–2 lantai di tanah keras/sedang' },
+  { id: 'footplate',     label: 'Pondasi Footplate',     desc: 'Beton bertulang, cocok untuk tanah sedang–keras' },
+  { id: 'strauss-pile',  label: 'Pondasi Strauss Pile',  desc: 'Bor manual, untuk tanah lunak hingga 6m' },
+  { id: 'tiang-pancang', label: 'Pondasi Tiang Pancang', desc: 'Untuk tanah sangat lunak/gambut, beban berat' },
+  { id: 'raft',          label: 'Pondasi Rakit (Raft)',  desc: 'Plat beton lebar, untuk tanah lunak merata' },
+  { id: 'sumuran',       label: 'Pondasi Sumuran',       desc: 'Untuk tanah keras di kedalaman tertentu' },
+] as const;
+
+// Matriks rekomendasi: soilType → [foundationId, alasan, level]
+const FOUNDATION_RECOMMENDATIONS: Record<string, { id: string; reason: string; level: 'recommended' | 'possible' | 'avoid' }[]> = {
+  keras: [
+    { id: 'batu-kali',    reason: 'Paling ekonomis dan efisien untuk tanah keras, cocok 1–2 lantai', level: 'recommended' },
+    { id: 'footplate',    reason: 'Alternatif baik jika beban kolom besar', level: 'possible' },
+    { id: 'sumuran',      reason: 'Jika lapisan keras ada di kedalaman tertentu', level: 'possible' },
+    { id: 'tiang-pancang',reason: 'Berlebihan untuk tanah keras, tidak efisien biaya', level: 'avoid' },
+  ],
+  sedang: [
+    { id: 'footplate',    reason: 'Distribusi beban merata, cocok untuk tanah sedang', level: 'recommended' },
+    { id: 'batu-kali',    reason: 'Bisa dipakai untuk 1 lantai dengan pengawasan ketat', level: 'possible' },
+    { id: 'strauss-pile', reason: 'Jika ada lapisan lunak di bawah', level: 'possible' },
+    { id: 'raft',         reason: 'Jika tanah sedang tidak merata', level: 'possible' },
+  ],
+  lunak: [
+    { id: 'strauss-pile', reason: 'Paling praktis untuk tanah lunak hingga kedalaman 6m', level: 'recommended' },
+    { id: 'tiang-pancang',reason: 'Untuk beban berat atau kedalaman >6m', level: 'recommended' },
+    { id: 'raft',         reason: 'Jika tanah lunak merata dan beban ringan', level: 'possible' },
+    { id: 'batu-kali',    reason: 'Tidak disarankan, risiko penurunan tidak merata', level: 'avoid' },
+  ],
+  gambut: [
+    { id: 'tiang-pancang',reason: 'Wajib menembus lapisan gambut ke tanah keras di bawahnya', level: 'recommended' },
+    { id: 'strauss-pile', reason: 'Jika gambut tidak terlalu dalam (<4m)', level: 'possible' },
+    { id: 'batu-kali',    reason: 'Sangat berbahaya, tanah gambut tidak stabil', level: 'avoid' },
+    { id: 'footplate',    reason: 'Tidak efektif tanpa perkuatan tanah terlebih dahulu', level: 'avoid' },
+  ],
+  pasir: [
+    { id: 'footplate',    reason: 'Setelah pemadatan, footplate cocok untuk tanah pasir', level: 'recommended' },
+    { id: 'batu-kali',    reason: 'Bisa dipakai jika pasir padat dan tidak berair', level: 'possible' },
+    { id: 'strauss-pile', reason: 'Jika pasir lepas dan dalam', level: 'possible' },
+    { id: 'raft',         reason: 'Untuk distribusi beban merata di pasir lepas', level: 'possible' },
+  ],
+  berbatu: [
+    { id: 'batu-kali',    reason: 'Ideal, tanah berbatu sangat mendukung pondasi batu kali', level: 'recommended' },
+    { id: 'footplate',    reason: 'Alternatif baik untuk beban kolom besar', level: 'possible' },
+    { id: 'sumuran',      reason: 'Jika batu ada di kedalaman tertentu', level: 'possible' },
+    { id: 'tiang-pancang',reason: 'Tidak perlu, tanah sudah sangat kuat', level: 'avoid' },
+  ],
+};
+
+const LEVEL_STYLE = {
+  recommended: 'bg-green-500/10 border-green-500/30 text-green-400',
+  possible:    'bg-blue-500/10 border-blue-500/30 text-blue-400',
+  avoid:       'bg-red-500/10 border-red-500/30 text-red-400',
+};
+const LEVEL_LABEL = {
+  recommended: '✓ Direkomendasikan',
+  possible:    '~ Bisa Dipakai',
+  avoid:       '✗ Hindari',
+};
 
 const RABCalculator = () => {
   const { addProject, setActiveTab, addActivityLog, user } = useStore();
@@ -80,6 +151,8 @@ const RABCalculator = () => {
     lightPointCount: 10,
     socketPointCount: 8,
     toiletType: 'duduk' as 'duduk' | 'jongkok',
+    soilType: undefined as Project['soilType'],
+    foundationType: undefined as Project['foundationType'],
   });
 
   const [rabItems, setRabItems] = useState<RABItem[]>([]);
@@ -456,6 +529,97 @@ const RABCalculator = () => {
                   <option value="dak">Atap Dak Beton</option>
                 </select>
               </div>
+            </div>
+
+            {/* Jenis Tanah & Rekomendasi Pondasi */}
+            <div className="border-t border-border pt-6">
+              <h4 className="text-sm font-bold text-text-secondary uppercase tracking-widest mb-4 flex items-center gap-2">
+                <Lightbulb size={14} className="text-primary" />
+                Jenis Tanah &amp; Rekomendasi Pondasi
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Pilih Jenis Tanah */}
+                <div className="space-y-3">
+                  <label className="text-text-secondary text-sm font-medium">Jenis Tanah di Lokasi</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {SOIL_TYPES.map(soil => (
+                      <button
+                        key={soil.id}
+                        type="button"
+                        onClick={() => setProjectData({ ...projectData, soilType: soil.id, foundationType: undefined })}
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          projectData.soilType === soil.id
+                            ? 'border-primary bg-primary/10 text-white'
+                            : 'border-border bg-background text-text-secondary hover:border-primary/50'
+                        }`}
+                      >
+                        <p className="font-bold text-sm">{soil.label}</p>
+                        <p className="text-[10px] mt-0.5 opacity-70">{soil.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Rekomendasi & Pilih Pondasi */}
+                <div className="space-y-3">
+                  <label className="text-text-secondary text-sm font-medium">
+                    {projectData.soilType ? 'Rekomendasi Pondasi' : 'Pilih jenis tanah untuk rekomendasi'}
+                  </label>
+                  {!projectData.soilType ? (
+                    <div className="h-full flex items-center justify-center p-8 border border-dashed border-border rounded-xl">
+                      <p className="text-text-secondary text-sm text-center">← Pilih jenis tanah terlebih dahulu</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {FOUNDATION_RECOMMENDATIONS[projectData.soilType]?.map(rec => {
+                        const found = FOUNDATION_TYPES.find(f => f.id === rec.id);
+                        if (!found) return null;
+                        return (
+                          <button
+                            key={rec.id}
+                            type="button"
+                            onClick={() => rec.level !== 'avoid' && setProjectData({ ...projectData, foundationType: rec.id as Project['foundationType'] })}
+                            disabled={rec.level === 'avoid'}
+                            className={`w-full p-3 rounded-xl border text-left transition-all ${
+                              projectData.foundationType === rec.id
+                                ? 'border-primary bg-primary/10'
+                                : `${LEVEL_STYLE[rec.level]} ${rec.level === 'avoid' ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90 cursor-pointer'}`
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="font-bold text-sm text-white">{found.label}</p>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${LEVEL_STYLE[rec.level]}`}>
+                                {LEVEL_LABEL[rec.level]}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-text-secondary">{rec.reason}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Summary pilihan */}
+              {projectData.soilType && projectData.foundationType && (() => {
+                const soil = SOIL_TYPES.find(s => s.id === projectData.soilType);
+                const found = FOUNDATION_TYPES.find(f => f.id === projectData.foundationType);
+                const rec = FOUNDATION_RECOMMENDATIONS[projectData.soilType!]?.find(r => r.id === projectData.foundationType);
+                return (
+                  <div className="mt-4 p-4 bg-green-500/10 border border-green-500/20 rounded-xl flex items-start gap-3">
+                    <CheckCircle2 size={18} className="text-green-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-green-400 font-bold text-sm">Konfigurasi Pondasi Dipilih</p>
+                      <p className="text-text-secondary text-xs mt-1">
+                        <span className="text-white">{soil?.label}</span> → <span className="text-primary font-bold">{found?.label}</span>
+                      </p>
+                      <p className="text-text-secondary text-xs mt-0.5">{found?.desc}</p>
+                      {rec && <p className="text-green-300 text-xs mt-1 italic">"{rec.reason}"</p>}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Detail Ruangan & Bukaan */}

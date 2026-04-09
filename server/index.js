@@ -60,6 +60,10 @@ const corsOptions = {
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
+    // Allow all Vercel origins (any .vercel.app domain)
+    if (origin && origin.includes('vercel.app')) {
+      return callback(null, true);
+    }
     if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
@@ -164,12 +168,28 @@ const connectDB = async () => {
       serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
       connectTimeoutMS: 10000,
+      maxPoolSize: 10,
+      retryWrites: true,
+      w: 'majority'
     });
     console.log('✅ MongoDB Connected');
   } catch (err) {
     console.log('⚠️ MongoDB gagal, pakai in-memory storage:', err.message);
   }
 };
+
+// Connection event handlers
+mongoose.connection.on('connected', () => {
+  console.log('🟢 MongoDB connection established');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('🔴 MongoDB connection error:', err.message);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('🟡 MongoDB disconnected');
+});
 
 connectDB();
 

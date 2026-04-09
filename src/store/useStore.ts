@@ -58,6 +58,9 @@ export interface Project {
   lightPointCount?: number;
   socketPointCount?: number;
   toiletType?: 'duduk' | 'jongkok';
+  // Jenis tanah & pondasi
+  soilType?: 'keras' | 'sedang' | 'lunak' | 'gambut' | 'pasir' | 'berbatu';
+  foundationType?: 'batu-kali' | 'footplate' | 'tiang-pancang' | 'strauss-pile' | 'raft' | 'sumuran';
   // Auto-save draft
   autoSaveDraft?: Partial<ProjectVersion>;
   autoSavedAt?: number;
