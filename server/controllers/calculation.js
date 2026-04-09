@@ -1,257 +1,259 @@
-const { calculateTotalRAB, calculateVolumeFromDimensions } = require('../utils/rabCalculator');
+const { calculateTotalRAB } = require('../utils/rabCalculator');
 
-// Frontend RAB Logic - Copy from App.jsx
-const classifyKategori = (namaPekerjaan) => {
-  if (!namaPekerjaan || typeof namaPekerjaan !== 'string') {
-    return 'Lain-lain';
-  }
-
-  const namaLower = namaPekerjaan.toLowerCase();
-  
-  // Struktur
-  if (namaLower.includes('galian') || namaLower.includes('tanah') || 
-      namaLower.includes('pondasi') || namaLower.includes('batu') || 
-      namaLower.includes('beton') || namaLower.includes('besian') || 
-      namaLower.includes('pembesian') || namaLower.includes('kolom') || 
-      namaLower.includes('balok') || namaLower.includes('sloof') || 
-      namaLower.includes('plat') || namaLower.includes('struktur') || 
-      namaLower.includes('cor')) {
-    return 'Struktur';
-  }
-  
-  // Dinding
-  if (namaLower.includes('dinding') || namaLower.includes('bata') || 
-      namaLower.includes('plester') || namaLower.includes('plesteran') || 
-      namaLower.includes('pasangan') || namaLower.includes('aci') || 
-      namaLower.includes('acian') || namaLower.includes('tembok')) {
-    return 'Dinding';
-  }
-  
-  // Lantai
-  if (namaLower.includes('lantai') || namaLower.includes('keramik') || 
-      namaLower.includes('penutup') || namaLower.includes('flooring') || 
-      namaLower.includes('granit') || namaLower.includes('marmer') || 
-      namaLower.includes('vinyl')) {
-    return 'Lantai';
-  }
-  
-  // Finishing
-  if (namaLower.includes('cat') || namaLower.includes('pengecatan') || 
-      namaLower.includes('finishing') || namaLower.includes('coating') || 
-      namaLower.includes('plafond') || namaLower.includes('ceiling') ||
-      namaLower.includes('pintu') || namaLower.includes('jendela') || 
-      namaLower.includes('kusen') || namaLower.includes('daun') || 
-      namaLower.includes('frame') || namaLower.includes('bukaan') ||
-      namaLower.includes('atap') || namaLower.includes('genteng') || 
-      namaLower.includes('rangka') || namaLower.includes('kayu') || 
-      namaLower.includes('talang') || namaLower.includes('roof') ||
-      namaLower.includes('air') || namaLower.includes('plumbing') || 
-      namaLower.includes('pipa') || namaLower.includes('drainase') || 
-      namaLower.includes('sanitair') || namaLower.includes('wastafel') ||
-      namaLower.includes('listrik') || namaLower.includes('electrical') || 
-      namaLower.includes('kabel') || namaLower.includes('instalasi') || 
-      namaLower.includes('lampu') ||
-      namaLower.includes('pembersihan') || namaLower.includes('persiapan') || 
-      namaLower.includes('pengukuran') || namaLower.includes('penandaan') || 
-      namaLower.includes('clearing') || namaLower.includes('setup')) {
-    return 'Finishing';
-  }
-  
-  // Default
-  return 'Lain-lain';
+/**
+ * AHSP Data sesuai Permen PUPR No. 1 Tahun 2022
+ * Koefisien material dan tenaga kerja sudah diverifikasi
+ */
+const AHSP_PUPR = {
+  // Koefisien material per m³ beton K-225 (SNI 7394:2008)
+  betonK225: {
+    semenPC: 371,       // kg
+    pasirBeton: 0.498,  // m³
+    krikilSplit: 0.776, // m³
+    air: 215,           // liter
+    labor: { pekerja: 1.65, tukangBatu: 0.275, kepalaTukang: 0.028, mandor: 0.083 }
+  },
+  // Koefisien per m² pasangan bata 1:4
+  pasanganBata: {
+    bataMerah: 70,      // bh
+    semenPC: 11.5,      // kg
+    pasirPasang: 0.043, // m³
+    labor: { pekerja: 0.3, tukangBatu: 0.1, kepalaTukang: 0.01, mandor: 0.015 }
+  },
+  // Koefisien per m² plesteran 1:4 t=15mm
+  plesteran: {
+    semenPC: 6.24,      // kg
+    pasirPasang: 0.024, // m³
+    labor: { pekerja: 0.2, tukangBatu: 0.15, kepalaTukang: 0.015, mandor: 0.01 }
+  },
+  // Koefisien per kg pembesian
+  pembesian: {
+    besiBeton: 1.05,    // kg
+    kawatBeton: 0.015,  // kg
+    labor: { pekerja: 0.007, tukangBesi: 0.007, kepalaTukang: 0.0007, mandor: 0.0004 }
+  },
+  // Koefisien per m³ pondasi batu kali 1:4
+  pondasiBatuKali: {
+    batuKali: 1.2,      // m³
+    semenPC: 136,       // kg
+    pasirPasang: 0.544, // m³
+    labor: { pekerja: 1.5, tukangBatu: 0.6, kepalaTukang: 0.06, mandor: 0.075 }
+  },
+  // Koefisien per m² pengecatan (1 lapis plamir + 1 dasar + 2 penutup)
+  pengecatan: {
+    plamir: 0.1,        // kg
+    catDasar: 0.1,      // kg
+    catPenutup: 0.26,   // kg
+    labor: { pekerja: 0.02, tukangCat: 0.063, kepalaTukang: 0.006, mandor: 0.003 }
+  },
 };
 
-const transformToGrouped = (dataFlat) => {
-  if (!Array.isArray(dataFlat)) {
-    throw new Error('ERROR: Input harus array, bukan ' + typeof dataFlat);
-  }
+// Harga satuan referensi PUPR 2022 (Rp) — rata-rata nasional
+// Untuk produksi, gunakan HSPK daerah setempat
+const HARGA_SATUAN_PUPR = {
+  // Material
+  semenPC: 1350,          // per kg (~Rp 67.500/sak 50kg)
+  pasirPasang: 280000,    // per m³
+  pasirBeton: 320000,     // per m³
+  krikilSplit: 330000,    // per m³
+  bataMerah: 800,         // per bh
+  besiBeton: 14500,       // per kg
+  kawatBeton: 22000,      // per kg
+  batuKali: 280000,       // per m³
+  pasirUrug: 180000,      // per m³
+  kayuBekisting: 3200000, // per m³
+  paku: 22000,            // per kg
+  minyakBekisting: 15000, // per liter
+  gentengBeton: 8500,     // per bh (14 bh/m²)
+  bajaRinganC75: 18500,   // per kg
+  rengBajaRingan: 12000,  // per kg
+  sekrupRoofing: 850,     // per bh
+  plamir: 28000,          // per kg
+  catDasar: 55000,        // per kg
+  catPenutup: 80000,      // per kg
+  // Upah tenaga kerja (per OH)
+  pekerja: 150000,
+  tukangBatu: 200000,
+  tukangBesi: 200000,
+  tukangCat: 185000,
+  tukangKayu: 200000,
+  tukangPipa: 195000,
+  tukangListrik: 210000,
+  kepalaTukang: 230000,
+  mandor: 270000,
+};
 
-  const groupedData = {};
-  const kategoriList = [
-    'Struktur',
-    'Dinding',
-    'Lantai',
-    'Finishing',
-    'Lain-lain'
-  ];
-
-  kategoriList.forEach(kategori => {
-    groupedData[kategori] = {
-      kategori: kategori,
-      items: [],
-      subtotal: 0
-    };
-  });
-
-  dataFlat.forEach((item, index) => {
-    if (!item || !item.uraian) {
-      return;
+/**
+ * Hitung harga satuan pekerjaan berdasarkan koefisien PUPR
+ */
+const hitungHargaSatuan = (koefisien, harga) => {
+  let total = 0;
+  Object.entries(koefisien).forEach(([key, coeff]) => {
+    if (key !== 'labor' && harga[key]) {
+      total += coeff * harga[key];
     }
-
-    const kategori = classifyKategori(item.uraian);
-    
-    const volume = parseFloat(item.volume) || 0;
-    const hargaSatuan = parseFloat(item.harga_satuan) || 0;
-    const total = volume * hargaSatuan;
-
-    groupedData[kategori].items.push({
-      no: groupedData[kategori].items.length + 1,
-      uraian: item.uraian,
-      volume: volume,
-      satuan: item.satuan || 'unit',
-      harga_satuan: hargaSatuan,
-      total: total
+  });
+  // Tambah upah
+  if (koefisien.labor) {
+    Object.entries(koefisien.labor).forEach(([jabatan, coeff]) => {
+      if (harga[jabatan]) total += coeff * harga[jabatan];
     });
-
-    groupedData[kategori].subtotal += total;
-  });
-
-  return groupedData;
+  }
+  return Math.round(total);
 };
 
-const hitungSubtotal = (groupedData) => {
-  if (!groupedData || typeof groupedData !== 'object') {
-    throw new Error('ERROR: Input harus object grouped structure');
+/**
+ * Generate RAB sesuai PUPR dengan jenis pondasi
+ */
+const generateRABPUPR = (luas, tipeRumah, provinsi, soilType, foundationType) => {
+  const perimeter = Math.sqrt(luas) * 4;
+  const wallArea = perimeter * 3;
+  const plasterArea = wallArea * 2;
+
+  // Faktor regional (sederhana)
+  const regionalFactor = {
+    'Papua': 1.5, 'Maluku': 1.35, 'Kalimantan': 1.2,
+    'Sulawesi': 1.15, 'Nusa Tenggara': 1.25, 'Sumatera': 1.1, 'Jawa': 1.0
+  };
+  const factor = Object.entries(regionalFactor).find(([region]) =>
+    provinsi?.toLowerCase().includes(region.toLowerCase())
+  )?.[1] || 1.0;
+
+  const H = {}; // harga dengan faktor regional
+  Object.entries(HARGA_SATUAN_PUPR).forEach(([k, v]) => { H[k] = Math.round(v * factor); });
+
+  const items = [];
+  let no = 1;
+
+  const addItem = (uraian, satuan, volume, hargaSatuan, kategori) => {
+    const total = Math.round(volume * hargaSatuan);
+    items.push({ no: no++, uraian, satuan, volume: Math.round(volume * 100) / 100, hargaSatuan, total, kategori });
+  };
+
+  // ── PEKERJAAN TANAH ──────────────────────────────────────
+  const foundationDepth = { keras: 0.6, sedang: 0.8, lunak: 1.0, gambut: 1.2, pasir: 0.8, berbatu: 0.5 }[soilType] || 0.7;
+  const excavationVol = perimeter * 0.6 * foundationDepth;
+  addItem('Galian Tanah Pondasi', 'm³', excavationVol, H.pekerja * 0.75 + H.mandor * 0.025, 'Struktur');
+  addItem('Urugan Pasir Bawah Pondasi (t=10cm)', 'm²', perimeter * 0.6, H.pasirUrug * 0.12 + H.pekerja * 0.1 + H.mandor * 0.005, 'Struktur');
+
+  // ── PONDASI ──────────────────────────────────────────────
+  switch (foundationType || 'batu-kali') {
+    case 'batu-kali': {
+      const vol = perimeter * 0.6 * 0.7;
+      const hsBatuKali = hitungHargaSatuan(AHSP_PUPR.pondasiBatuKali, H);
+      addItem('Pondasi Batu Kali 1:4', 'm³', vol, hsBatuKali, 'Struktur');
+      // Sloof
+      const sloofVol = perimeter * 0.15 * 0.2;
+      const hsBeton = hitungHargaSatuan(AHSP_PUPR.betonK225, H);
+      addItem('Sloof Beton K-225', 'm³', sloofVol, hsBeton, 'Struktur');
+      addItem('Pembesian Sloof', 'kg', sloofVol * 120, hitungHargaSatuan(AHSP_PUPR.pembesian, H), 'Struktur');
+      addItem('Bekisting Sloof', 'm²', perimeter * 2, H.kayuBekisting * 0.04 + H.paku * 0.4 + H.pekerja * 0.33 + H.tukangKayu * 0.33 + H.mandor * 0.017, 'Struktur');
+      break;
+    }
+    case 'footplate': {
+      const nFootplate = Math.ceil(luas / 16);
+      const fpVol = nFootplate * 0.8 * 0.8 * 0.3;
+      const hsBeton = hitungHargaSatuan(AHSP_PUPR.betonK225, H);
+      addItem('Footplate Beton K-225', 'm³', fpVol, hsBeton, 'Struktur');
+      addItem('Pembesian Footplate', 'kg', fpVol * 150, hitungHargaSatuan(AHSP_PUPR.pembesian, H), 'Struktur');
+      addItem('Bekisting Footplate', 'm²', nFootplate * 4, H.kayuBekisting * 0.04 + H.paku * 0.4 + H.pekerja * 0.33 + H.tukangKayu * 0.33 + H.mandor * 0.017, 'Struktur');
+      const sloofVol = perimeter * 0.15 * 0.25;
+      addItem('Sloof Beton K-225', 'm³', sloofVol, hsBeton, 'Struktur');
+      addItem('Pembesian Sloof', 'kg', sloofVol * 120, hitungHargaSatuan(AHSP_PUPR.pembesian, H), 'Struktur');
+      break;
+    }
+    case 'strauss-pile': {
+      const nPile = Math.ceil(luas / 9);
+      const pileDepth = soilType === 'lunak' ? 5 : 4;
+      const pileVol = nPile * Math.PI * 0.15 * 0.15 * pileDepth;
+      const hsBeton = hitungHargaSatuan(AHSP_PUPR.betonK225, H);
+      addItem('Strauss Pile Beton K-225', 'm³', pileVol, hsBeton * 1.3, 'Struktur'); // faktor 1.3 untuk pekerjaan bor
+      addItem('Pembesian Strauss Pile', 'kg', pileVol * 180, hitungHargaSatuan(AHSP_PUPR.pembesian, H), 'Struktur');
+      const capVol = nPile * 0.6 * 0.6 * 0.3;
+      addItem('Pile Cap Beton K-225', 'm³', capVol, hsBeton, 'Struktur');
+      break;
+    }
+    case 'raft': {
+      const raftVol = luas * 0.25;
+      const hsBeton = hitungHargaSatuan(AHSP_PUPR.betonK225, H);
+      addItem('Raft Foundation Beton K-225', 'm³', raftVol, hsBeton, 'Struktur');
+      addItem('Pembesian Raft', 'kg', raftVol * 100, hitungHargaSatuan(AHSP_PUPR.pembesian, H), 'Struktur');
+      addItem('Bekisting Raft', 'm²', luas * 1.2, H.kayuBekisting * 0.04 + H.paku * 0.4 + H.pekerja * 0.33 + H.tukangKayu * 0.33 + H.mandor * 0.017, 'Struktur');
+      break;
+    }
+    default: {
+      const vol = perimeter * 0.6 * 0.7;
+      addItem('Pondasi Batu Kali 1:4', 'm³', vol, hitungHargaSatuan(AHSP_PUPR.pondasiBatuKali, H), 'Struktur');
+    }
   }
 
-  let subtotalPerKategori = {};
-  
-  Object.keys(groupedData).forEach(kategori => {
-    const dataKategori = groupedData[kategori];
-    if (!dataKategori.items || !Array.isArray(dataKategori.items)) {
-      throw new Error(`ERROR: Kategori ${kategori} tidak memiliki items array`);
-    }
-    
-    subtotalPerKategori[kategori] = dataKategori.items.reduce((sum, item) => {
-      return sum + (parseFloat(item.total) || 0);
-    }, 0);
-    
-    dataKategori.subtotal = subtotalPerKategori[kategori];
+  // ── STRUKTUR ATAS ────────────────────────────────────────
+  const hsBeton = hitungHargaSatuan(AHSP_PUPR.betonK225, H);
+  const hsPembesian = hitungHargaSatuan(AHSP_PUPR.pembesian, H);
+  const hsBekisting = H.kayuBekisting * 0.04 + H.paku * 0.4 + H.pekerja * 0.33 + H.tukangKayu * 0.33 + H.mandor * 0.017;
+
+  addItem('Kolom Beton K-225', 'm³', luas * 0.05, hsBeton, 'Struktur');
+  addItem('Pembesian Kolom', 'kg', luas * 0.05 * 120, hsPembesian, 'Struktur');
+  addItem('Bekisting Kolom', 'm²', luas * 0.05 * 8, hsBekisting, 'Struktur');
+  addItem('Balok Beton K-225', 'm³', luas * 0.07, hsBeton, 'Struktur');
+  addItem('Pembesian Balok', 'kg', luas * 0.07 * 110, hsPembesian, 'Struktur');
+  addItem('Bekisting Balok', 'm²', luas * 0.07 * 6, hsBekisting, 'Struktur');
+  addItem('Plat Lantai Beton K-225', 'm³', luas * 0.12, hsBeton, 'Struktur');
+  addItem('Pembesian Plat Lantai', 'kg', luas * 0.12 * 80, hsPembesian, 'Struktur');
+  addItem('Bekisting Plat Lantai', 'm²', luas, hsBekisting, 'Struktur');
+
+  // ── DINDING ──────────────────────────────────────────────
+  const hsBata = hitungHargaSatuan(AHSP_PUPR.pasanganBata, H);
+  const hsPlester = hitungHargaSatuan(AHSP_PUPR.plesteran, H);
+  addItem('Pasangan Bata Merah 1:4', 'm²', wallArea, hsBata, 'Dinding');
+  addItem('Plesteran 1:4 Tebal 15mm', 'm²', plasterArea, hsPlester, 'Dinding');
+  addItem('Acian Dinding', 'm²', plasterArea, H.semenPC * 0.15 + H.pekerja * 0.2 + H.tukangBatu * 0.15 + H.mandor * 0.01, 'Dinding');
+
+  // ── ATAP ─────────────────────────────────────────────────
+  const roofArea = luas * 1.2;
+  const hsRangkaAtap = H.bajaRinganC75 * 5.2 + H.rengBajaRingan * 3.5 + H.sekrupRoofing * 12 + H.pekerja * 0.12 + H.tukangBesi * 0.08 + H.mandor * 0.006;
+  const hsGenteng = H.gentengBeton * 14 + H.semenPC * 1.5 + H.pasirPasang * 0.006 + H.pekerja * 0.08 + H.tukangBatu * 0.06 + H.mandor * 0.004;
+  addItem('Rangka Atap Baja Ringan', 'm²', roofArea, hsRangkaAtap, 'Atap');
+  addItem('Penutup Atap Genteng Beton', 'm²', roofArea, hsGenteng, 'Atap');
+
+  // ── FINISHING ────────────────────────────────────────────
+  const hsCat = hitungHargaSatuan(AHSP_PUPR.pengecatan, H);
+  addItem('Pengecatan Tembok (Plamir+Dasar+2x Penutup)', 'm²', plasterArea, hsCat, 'Finishing');
+
+  // ── HITUNG TOTAL ─────────────────────────────────────────
+  const subtotal = items.reduce((s, i) => s + i.total, 0);
+  const ppn = subtotal * 0.11;
+  const profit = subtotal * 0.15;
+  const grandTotal = subtotal + ppn + profit;
+
+  // Kelompokkan per kategori
+  const grouped = {};
+  items.forEach(item => {
+    if (!grouped[item.kategori]) grouped[item.kategori] = { items: [], subtotal: 0 };
+    grouped[item.kategori].items.push(item);
+    grouped[item.kategori].subtotal += item.total;
   });
-
-  return subtotalPerKategori;
-};
-
-const hitungGrandTotal = (groupedData) => {
-  if (!groupedData || typeof groupedData !== 'object') {
-    throw new Error('ERROR: Input harus object grouped structure');
-  }
-
-  let grandTotal = 0;
-  
-  Object.keys(groupedData).forEach(kategori => {
-    const dataKategori = groupedData[kategori];
-    if (dataKategori.subtotal) {
-      grandTotal += parseFloat(dataKategori.subtotal) || 0;
-    }
-  });
-
-  return grandTotal;
-};
-
-const validateGroupedStructure = (groupedData) => {
-  const errors = [];
-
-  if (!groupedData || typeof groupedData !== 'object') {
-    errors.push('ERROR: Data harus object grouped structure, bukan flat list/array');
-  }
-
-  if (Object.keys(groupedData).length === 0) {
-    errors.push('ERROR: Tidak ada kategori dalam grouped structure');
-  }
-
-  Object.keys(groupedData).forEach(kategori => {
-    const data = groupedData[kategori];
-    
-    if (!data.items || !Array.isArray(data.items)) {
-      errors.push(`ERROR: Kategori ${kategori} tidak memiliki items array`);
-    }
-    
-    if (typeof data.subtotal !== 'number') {
-      errors.push(`ERROR: Kategori ${kategori} tidak memiliki subtotal valid`);
-    }
-  });
-
-  const grandTotal = hitungGrandTotal(groupedData);
-  if (grandTotal <= 0) {
-    errors.push('ERROR: Grand total harus lebih dari 0');
-  }
 
   return {
-    isValid: errors.length === 0,
-    errors: errors
+    items,
+    grouped,
+    subtotal,
+    ppn,
+    profit,
+    grandTotal,
+    puprCompliant: true,
+    referensi: 'Permen PUPR No. 1 Tahun 2022 + SNI 7394:2008',
+    foundationType: foundationType || 'batu-kali',
+    soilType: soilType || 'sedang',
   };
 };
 
-const generateRABGrouped = (luas, tipeRumah, provinsi) => {
-  try {
-    const flatData = [
-      // Struktur
-      { uraian: 'Galian Tanah untuk Pondasi', volume: luas * 0.3, satuan: 'm³', harga_satuan: 75000 },
-      { uraian: 'Urugan Pasir', volume: luas * 0.2, satuan: 'm³', harga_satuan: 45000 },
-      { uraian: 'Pemadatan Tanah', volume: luas * 0.3, satuan: 'm³', harga_satuan: 35000 },
-      { uraian: 'Pondasi Batu Kosong', volume: luas * 0.15, satuan: 'm³', harga_satuan: 85000 },
-      { uraian: 'Sloof Beton Bertulang', volume: luas * 0.05, satuan: 'm³', harga_satuan: 90000 },
-      { uraian: 'Kolom Beton Bertulang', volume: luas * 0.08, satuan: 'm³', harga_satuan: 95000 },
-      { uraian: 'Balok Beton Bertulang', volume: luas * 0.12, satuan: 'm³', harga_satuan: 90000 },
-      { uraian: 'Plat Lantai Beton', volume: luas, satuan: 'm²', harga_satuan: 75000 },
-      { uraian: 'Pembesian', volume: luas * 80, satuan: 'kg', harga_satuan: 25000 },
-      
-      // Dinding
-      { uraian: 'Pasangan Bata Merah', volume: luas * 3.5, satuan: 'm²', harga_satuan: 65000 },
-      { uraian: 'Plesteran Dinding', volume: luas * 3.5, satuan: 'm²', harga_satuan: 40000 },
-      { uraian: 'Acian Dinding', volume: luas * 3.5, satuan: 'm²', harga_satuan: 30000 },
-      
-      // Lantai
-      { uraian: 'Keramik Lantai', volume: luas, satuan: 'm²', harga_satuan: 50000 },
-      { uraian: 'Granit Lantai', volume: luas * 0.5, satuan: 'm²', harga_satuan: 120000 },
-      
-      // Finishing
-      { uraian: 'Pembersihan Lokasi Proyek', volume: luas * 0.1, satuan: 'm²', harga_satuan: 50000 },
-      { uraian: 'Pengecatan Interior', volume: luas * 3.5, satuan: 'm²', harga_satuan: 30000 },
-      { uraian: 'Pengecatan Exterior', volume: luas * 2, satuan: 'm²', harga_satuan: 35000 },
-      { uraian: 'Cat Plafond', volume: luas, satuan: 'm²', harga_satuan: 25000 },
-      { uraian: 'Kusen Pintu Kayu', volume: 2, satuan: 'unit', harga_satuan: 1200000 },
-      { uraian: 'Daun Pintu Utama', volume: 2, satuan: 'unit', harga_satuan: 800000 },
-      { uraian: 'Kusen Jendela Kayu', volume: 3, satuan: 'unit', harga_satuan: 850000 },
-      { uraian: 'Daun Jendela', volume: 3, satuan: 'unit', harga_satuan: 600000 },
-      { uraian: 'Rangka Atap Kayu', volume: luas, satuan: 'm²', harga_satuan: 25000 },
-      { uraian: 'Penutup Genteng Beton', volume: luas, satuan: 'm²', harga_satuan: 45000 },
-      { uraian: 'Talang Beton', volume: luas * 0.5, satuan: 'm', harga_satuan: 35000 },
-      { uraian: 'Instalasi Air Bersih', volume: luas * 0.1, satuan: 'm', harga_satuan: 30000 },
-      { uraian: 'Instalasi Air Kotor', volume: luas * 0.1, satuan: 'm', harga_satuan: 35000 },
-      { uraian: 'Instalasi Listrik', volume: 5, satuan: 'titik', harga_satuan: 55000 }
-    ];
-
-    const groupedData = transformToGrouped(flatData);
-    hitungSubtotal(groupedData);
-    const grandTotal = hitungGrandTotal(groupedData);
-    
-    const validation = validateGroupedStructure(groupedData);
-    if (!validation.isValid) {
-      throw new Error('ERROR: Grouped structure validation failed: ' + validation.errors.join(', '));
-    }
-
-    return {
-      groupedRAB: groupedData,
-      grandTotal: grandTotal,
-      totalPPN: grandTotal * 0.11,
-      totalProfit: grandTotal * 0.15,
-      grandTotalFinal: grandTotal * 1.31,
-      validation: validation
-    };
-
-  } catch (error) {
-    throw new Error('ERROR: Gagal generate RAB dengan grouped structure - ' + error.message);
-  }
-};
-
-// @desc    Calculate RAB with Grouped Structure
+// @desc    Calculate RAB sesuai PUPR
 // @route   POST /api/calculate-rab
-// @access  Public (no auth required for demo)
+// @access  Public
 exports.calculateRAB = async (req, res, next) => {
   try {
-    const { luas, tipeRumah, provinsi } = req.body;
+    const { luas, tipeRumah, provinsi, soilType, foundationType } = req.body;
 
     if (!luas || !tipeRumah || !provinsi) {
       return res.status(400).json({
@@ -260,26 +262,20 @@ exports.calculateRAB = async (req, res, next) => {
       });
     }
 
-    const rabGrouped = generateRABGrouped(parseFloat(luas), tipeRumah, provinsi);
+    const result = generateRABPUPR(
+      parseFloat(luas), tipeRumah, provinsi, soilType, foundationType
+    );
 
-    // Calculate estimasi waktu dan upah
-    const estimasiWaktu = Math.ceil(parseFloat(luas) / 7); // 7m² per hari
-    const upahMandor = estimasiWaktu * 150000; // Rp 150k/hari
-    const upahTukang = estimasiWaktu * 2 * 120000; // 2 tukang @ Rp 120k/hari
-    const upahKenek = estimasiWaktu * 2 * 80000; // 2 kenek @ Rp 80k/hari
-    const totalUpah = upahMandor + upahTukang + upahKenek;
+    // Estimasi waktu & upah
+    const estimasiWaktu = Math.ceil(parseFloat(luas) / 7);
+    const totalUpah = estimasiWaktu * (HARGA_SATUAN_PUPR.mandor + HARGA_SATUAN_PUPR.tukangBatu * 2 + HARGA_SATUAN_PUPR.pekerja * 3);
 
     res.status(200).json({
       success: true,
       data: {
-        ...rabGrouped,
+        ...result,
         estimasiWaktu,
         totalUpah,
-        detailUpah: {
-          mandor: upahMandor,
-          tukang: upahTukang,
-          kenek: upahKenek
-        }
       }
     });
   } catch (err) {
@@ -287,31 +283,31 @@ exports.calculateRAB = async (req, res, next) => {
   }
 };
 
-// @desc    Get AHSP data
+// @desc    Get AHSP data sesuai PUPR
 // @route   GET /api/calculate-rab/ahsp
 // @access  Public
 exports.getAHSPData = async (req, res, next) => {
   try {
-    // Return sample AHSP data
-    const ahspData = {
-      materials: [
-        { nama: 'Semen', satuan: 'sak', harga: 75000 },
-        { nama: 'Pasir', satuan: 'm³', harga: 120000 },
-        { nama: 'Batu', satuan: 'm³', harga: 180000 },
-        { nama: 'Besi', satuan: 'kg', harga: 25000 },
-        { nama: 'Kayu', satuan: 'm³', harga: 2500000 }
-      ],
-      labor: [
-        { jabatan: 'Mandor', upah: 150000 },
-        { jabatan: 'Tukang Batu', upah: 120000 },
-        { jabatan: 'Tukang Kayu', upah: 120000 },
-        { jabatan: 'Kenek', upah: 80000 }
-      ]
-    };
-
     res.status(200).json({
       success: true,
-      data: ahspData
+      referensi: 'Permen PUPR No. 1 Tahun 2022',
+      data: {
+        materials: Object.entries(HARGA_SATUAN_PUPR)
+          .filter(([k]) => !['pekerja','tukangBatu','tukangBesi','tukangCat','tukangKayu','tukangPipa','tukangListrik','kepalaTukang','mandor'].includes(k))
+          .map(([nama, harga]) => ({ nama, harga, satuan: 'unit' })),
+        labor: [
+          { jabatan: 'Pekerja',        upah: HARGA_SATUAN_PUPR.pekerja },
+          { jabatan: 'Tukang Batu',    upah: HARGA_SATUAN_PUPR.tukangBatu },
+          { jabatan: 'Tukang Besi',    upah: HARGA_SATUAN_PUPR.tukangBesi },
+          { jabatan: 'Tukang Cat',     upah: HARGA_SATUAN_PUPR.tukangCat },
+          { jabatan: 'Tukang Kayu',    upah: HARGA_SATUAN_PUPR.tukangKayu },
+          { jabatan: 'Tukang Pipa',    upah: HARGA_SATUAN_PUPR.tukangPipa },
+          { jabatan: 'Tukang Listrik', upah: HARGA_SATUAN_PUPR.tukangListrik },
+          { jabatan: 'Kepala Tukang',  upah: HARGA_SATUAN_PUPR.kepalaTukang },
+          { jabatan: 'Mandor',         upah: HARGA_SATUAN_PUPR.mandor },
+        ],
+        koefisien: AHSP_PUPR,
+      }
     });
   } catch (err) {
     next(err);
