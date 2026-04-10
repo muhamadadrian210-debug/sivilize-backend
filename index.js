@@ -197,7 +197,26 @@ mongoose.connection.on('disconnected', () => {
   console.warn('🟡 MongoDB disconnected');
 });
 
-connectDB();
+// Singleton connection promise — reuse antar invocations
+let dbConnectionPromise = null;
+
+const ensureDBConnected = async () => {
+  if (mongoose.connection.readyState === 1) return; // sudah konek
+  if (!dbConnectionPromise) {
+    dbConnectionPromise = connectDB().catch(() => { dbConnectionPromise = null; });
+  }
+  await dbConnectionPromise;
+};
+
+// Middleware: pastikan DB konek sebelum handle request
+app.use(async (req, res, next) => {
+  try {
+    await ensureDBConnected();
+  } catch {
+    // Lanjut dengan in-memory jika gagal
+  }
+  next();
+});
 
 // ============================================================
 // 10. ROUTES - Auth pakai rate limiter ketat
