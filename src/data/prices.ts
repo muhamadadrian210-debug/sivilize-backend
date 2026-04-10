@@ -17,6 +17,19 @@ export interface ProvinceOption {
 
 export type MaterialGrade = 'A' | 'B' | 'C';
 
+// Tipe lokasi proyek — menentukan multiplier ongkos angkut
+export type LocationType = 'kota' | 'pinggiran' | 'pelosok' | 'sangat-terpencil';
+
+export const LOCATION_TYPE_OPTIONS: { id: LocationType; label: string; multiplier: number; desc: string }[] = [
+  { id: 'kota',            label: 'Pusat Kota',        multiplier: 1.00, desc: 'Akses mudah, material tersedia' },
+  { id: 'pinggiran',       label: 'Pinggiran Kota',    multiplier: 1.08, desc: 'Jarak 10–30km dari pusat kota' },
+  { id: 'pelosok',         label: 'Pelosok/Desa',      multiplier: 1.18, desc: 'Jarak >30km, akses terbatas' },
+  { id: 'sangat-terpencil',label: 'Sangat Terpencil',  multiplier: 1.35, desc: 'Pulau terpencil, pegunungan, akses sulit' },
+];
+
+export const getLocationMultiplier = (locationType: LocationType = 'kota'): number =>
+  LOCATION_TYPE_OPTIONS.find(l => l.id === locationType)?.multiplier ?? 1.0;
+
 export interface MaterialTransparency {
   materialName: string;
   brand: string;
@@ -113,6 +126,14 @@ const defaultMaterials: Record<string, number> = {
   'Kayu Kaso 5/7': 3500000,     // per m³
   'Papan Kayu 2/20': 3200000,   // per m³
   'Seng Gelombang': 85000,      // per m²
+  // === K3 ===
+  'Helm Proyek': 85000,         // per buah
+  'Rompi Safety': 65000,        // per buah
+  'Sepatu Safety': 250000,      // per pasang
+  'Sarung Tangan': 25000,       // per pasang
+  'Kacamata Safety': 35000,     // per buah
+  'Kotak P3K': 150000,          // per set
+  'APAR (Alat Pemadam)': 350000,// per buah
   'Kayu Bekisting': 3200000,  // per m³ (kayu kelas III)
   'Paku': 22000,              // per kg
   'Minyak Bekisting': 15000,  // per liter

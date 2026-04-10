@@ -61,6 +61,8 @@ export interface Project {
   // Jenis tanah & pondasi
   soilType?: 'keras' | 'sedang' | 'lunak' | 'gambut' | 'pasir' | 'berbatu';
   foundationType?: 'batu-kali' | 'footplate' | 'tiang-pancang' | 'strauss-pile' | 'raft' | 'sumuran';
+  // Tipe lokasi untuk multiplier ongkos angkut
+  locationType?: 'kota' | 'pinggiran' | 'pelosok' | 'sangat-terpencil';
   // Auto-save draft
   autoSaveDraft?: Partial<ProjectVersion>;
   autoSavedAt?: number;

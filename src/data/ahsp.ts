@@ -130,6 +130,86 @@ export const AHSP_TEMPLATES: AHSPTemplate[] = [
     ],
     productivity: 1,
   },
+  {
+    id: 'per-008',
+    category: 'Persiapan',
+    name: 'Penyediaan Air Kerja (Selama Pelaksanaan)',
+    unit: 'ls',
+    materials: [
+      { name: 'Pipa PVC 1/2"', coeff: 10, unit: 'm' },
+      { name: 'Fitting PVC', coeff: 5, unit: 'buah' },
+    ],
+    laborCoefficients: [
+      { name: 'Pekerja', coeff: 1.0, unit: 'OH' },
+      { name: 'Tukang Pipa', coeff: 1.0, unit: 'OH' },
+      { name: 'Mandor', coeff: 0.1, unit: 'OH' },
+    ],
+    productivity: 1,
+  },
+  {
+    id: 'per-009',
+    category: 'Persiapan',
+    name: 'Penyediaan Listrik Kerja (Selama Pelaksanaan)',
+    unit: 'ls',
+    materials: [
+      { name: 'Kabel NYM 2x1.5mm', coeff: 20, unit: 'm' },
+      { name: 'Stop Kontak', coeff: 3, unit: 'buah' },
+      { name: 'MCB 1 Phase', coeff: 1, unit: 'buah' },
+    ],
+    laborCoefficients: [
+      { name: 'Pekerja', coeff: 1.0, unit: 'OH' },
+      { name: 'Tukang Listrik', coeff: 1.0, unit: 'OH' },
+      { name: 'Mandor', coeff: 0.1, unit: 'OH' },
+    ],
+    productivity: 1,
+  },
+  // ══════════════════════════════════════════════════════════
+  // K3 — Keselamatan & Kesehatan Kerja (wajib sesuai PP No.50/2012)
+  // ══════════════════════════════════════════════════════════
+  {
+    id: 'k3-001',
+    category: 'Persiapan',
+    name: 'Perlengkapan K3 (Helm, Rompi, Sepatu Safety)',
+    unit: 'set',
+    materials: [
+      { name: 'Helm Proyek', coeff: 1, unit: 'buah' },
+      { name: 'Rompi Safety', coeff: 1, unit: 'buah' },
+      { name: 'Sepatu Safety', coeff: 1, unit: 'pasang' },
+      { name: 'Sarung Tangan', coeff: 1, unit: 'pasang' },
+      { name: 'Kacamata Safety', coeff: 1, unit: 'buah' },
+    ],
+    laborCoefficients: [],
+    productivity: 1,
+  },
+  {
+    id: 'k3-002',
+    category: 'Persiapan',
+    name: 'Pemasangan Pagar Pengaman Proyek',
+    unit: 'm1',
+    materials: [
+      { name: 'Seng Gelombang', coeff: 0.9, unit: 'm2' },
+      { name: 'Kayu Kaso 5/7', coeff: 0.005, unit: 'm3' },
+      { name: 'Paku', coeff: 0.1, unit: 'kg' },
+    ],
+    laborCoefficients: [
+      { name: 'Pekerja', coeff: 0.15, unit: 'OH' },
+      { name: 'Tukang Kayu', coeff: 0.1, unit: 'OH' },
+      { name: 'Mandor', coeff: 0.01, unit: 'OH' },
+    ],
+    productivity: 15,
+  },
+  {
+    id: 'k3-003',
+    category: 'Persiapan',
+    name: 'Kotak P3K & Perlengkapan Darurat',
+    unit: 'ls',
+    materials: [
+      { name: 'Kotak P3K', coeff: 1, unit: 'set' },
+      { name: 'APAR (Alat Pemadam)', coeff: 1, unit: 'buah' },
+    ],
+    laborCoefficients: [],
+    productivity: 1,
+  },
   // STRUKTUR
   {
     id: 'str-001',

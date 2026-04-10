@@ -29,7 +29,10 @@ import {
   DEFAULT_MATERIAL_GRADE,
   MATERIAL_GRADE_OPTIONS,
   getCitiesByProvince,
+  LOCATION_TYPE_OPTIONS,
+  getLocationMultiplier,
   type MaterialGrade,
+  type LocationType,
 } from '../../data/prices';
 import { projectService } from '../../services/api';
 import { 
@@ -46,6 +49,7 @@ import MaterialSummary from './MaterialSummary';
 import ProjectTimeline from './ProjectTimeline';
 import GroupedRABDisplay from './GroupedRABDisplay';
 import { motion, AnimatePresence } from 'framer-motion';
+import StickyTotalBar from '../common/StickyTotalBar';
 
 // ── Data Jenis Tanah & Rekomendasi Pondasi ──────────────────
 const SOIL_TYPES = [
@@ -130,6 +134,7 @@ const RABCalculator = () => {
   const [activeSubTab, setActiveSubTab] = useState<'rab' | 'materials' | 'timeline'>('rab');
   const [selectedProvince, setSelectedProvince] = useState(DEFAULT_PROVINCE_ID);
   const [materialGrade, setMaterialGrade] = useState<MaterialGrade>(DEFAULT_MATERIAL_GRADE);
+  const [locationType, setLocationType] = useState<LocationType>('kota');
 
   // Form State
   const [projectData, setProjectData] = useState<Partial<Project>>({
@@ -266,10 +271,13 @@ const RABCalculator = () => {
       const roofArea = totalArea * (roofAreaFactorMap[projectData.roofModel || '2-air']);
       
       const templates = AHSP_TEMPLATES;
+      const locationMult = getLocationMultiplier(locationType);
       const addItem = (templateId: string, volume: number, team: Record<string, number>) => {
         const template = templates.find((t) => t.id === templateId);
         if (!template) return;
-        const unitPrice = calculateAHSPItem(template, projectData.location!, materialGrade);
+        // Harga satuan × location multiplier untuk ongkos angkut
+        const basePrice = calculateAHSPItem(template, projectData.location!, materialGrade);
+        const unitPrice = Math.round(basePrice * locationMult);
         generated.push({
           id: `${generated.length + 1}`,
           category: template.category,
@@ -290,6 +298,13 @@ const RABCalculator = () => {
       addItem('per-005', 1, { 'Pekerja': 2, 'Tukang Kayu': 1, 'Mandor': 1 });  // Pengukuran & patok
       addItem('per-006', 1, { 'Pekerja': 4, 'Mandor': 1 });                    // Mobilisasi
       addItem('per-007', 1, { 'Pekerja': 1, 'Tukang Kayu': 1, 'Mandor': 1 }); // Papan nama proyek
+      addItem('per-008', 1, { 'Pekerja': 1, 'Tukang Pipa': 1, 'Mandor': 1 }); // Air kerja
+      addItem('per-009', 1, { 'Pekerja': 1, 'Tukang Listrik': 1, 'Mandor': 1 }); // Listrik kerja
+      // K3
+      const totalWorkers = 8; // estimasi jumlah pekerja
+      addItem('k3-001', totalWorkers, {});                                       // APD per orang
+      addItem('k3-002', perimeter, { 'Pekerja': 2, 'Tukang Kayu': 1, 'Mandor': 1 }); // Pagar pengaman
+      addItem('k3-003', 1, {});                                                  // P3K & APAR
 
       // ── PONDASI — berdasarkan pilihan jenis tanah & pondasi ──
       const foundationDepth = (() => {
@@ -625,6 +640,26 @@ const RABCalculator = () => {
                   <option value="4-air">Atap 4 Air</option>
                   <option value="dak">Atap Dak Beton</option>
                 </select>
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-text-secondary text-sm font-medium flex items-center gap-2">
+                  Tipe Lokasi Proyek
+                  <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">Ongkos Angkut</span>
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {LOCATION_TYPE_OPTIONS.map(loc => (
+                    <button key={loc.id} type="button"
+                      onClick={() => { setLocationType(loc.id); setProjectData({ ...projectData, locationType: loc.id }); }}
+                      className={`p-3 rounded-xl border text-left transition-all ${locationType === loc.id ? 'border-primary bg-primary/10' : 'border-border bg-background hover:border-primary/50'}`}
+                    >
+                      <p className={`font-bold text-sm ${locationType === loc.id ? 'text-primary' : 'text-white'}`}>{loc.label}</p>
+                      <p className="text-[10px] text-text-secondary mt-0.5">{loc.desc}</p>
+                      <p className={`text-xs font-black mt-1 ${loc.multiplier > 1 ? 'text-yellow-400' : 'text-green-400'}`}>
+                        {loc.multiplier === 1 ? 'Harga Normal' : `+${Math.round((loc.multiplier - 1) * 100)}% ongkir`}
+                      </p>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -1207,6 +1242,7 @@ const RABCalculator = () => {
   };
 
   return (
+    <>
     <div className="max-w-5xl mx-auto">
       {/* Progress Header */}
       <div className="flex items-center justify-between mb-8">
@@ -1284,6 +1320,17 @@ const RABCalculator = () => {
         </div>
       </div>
     </div>
+
+    {/* Sticky Total Bar — tampil saat step 3 */}
+    {step === 3 && (
+      <StickyTotalBar
+        subtotal={summary.subtotal}
+        grandTotal={summary.grandTotal}
+        itemCount={rabItems.length}
+        onScrollToTop={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      />
+    )}
+    </>
   );
 };
 
