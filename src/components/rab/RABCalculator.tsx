@@ -252,7 +252,8 @@ const RABCalculator = () => {
       const generated: RABItem[] = [];
       
       // Estimasi volume dasar rumah tinggal minimalis
-      const wallArea = (Math.sqrt(totalArea) * 4) * 3 * projectData.floors!;
+      const perimeter = Math.sqrt(totalArea) * 4;
+      const wallArea = perimeter * 3 * projectData.floors!;
       const plasterArea = wallArea * 2;
       const paintArea = plasterArea;
       const roofAreaFactorMap: Record<NonNullable<Project['roofModel']>, number> = {
@@ -281,8 +282,16 @@ const RABCalculator = () => {
         });
       };
       
+      // ── PEKERJAAN PERSIAPAN ──────────────────────────────────
+      addItem('per-001', totalArea, { 'Pekerja': 3, 'Mandor': 1 });           // Pembersihan lokasi
+      addItem('per-002', perimeter * 1.2, { 'Pekerja': 2, 'Tukang Kayu': 2, 'Mandor': 1 }); // Bowplank
+      addItem('per-003', 12, { 'Pekerja': 2, 'Tukang Kayu': 2, 'Mandor': 1 }); // Gudang bahan 12m²
+      addItem('per-004', 9, { 'Pekerja': 2, 'Tukang Kayu': 2, 'Mandor': 1 });  // Direksi keet 9m²
+      addItem('per-005', 1, { 'Pekerja': 2, 'Tukang Kayu': 1, 'Mandor': 1 });  // Pengukuran & patok
+      addItem('per-006', 1, { 'Pekerja': 4, 'Mandor': 1 });                    // Mobilisasi
+      addItem('per-007', 1, { 'Pekerja': 1, 'Tukang Kayu': 1, 'Mandor': 1 }); // Papan nama proyek
+
       // ── PONDASI — berdasarkan pilihan jenis tanah & pondasi ──
-      const perimeter = Math.sqrt(totalArea) * 4; // keliling estimasi
       const foundationDepth = (() => {
         switch (projectData.soilType) {
           case 'keras':    return 0.6;

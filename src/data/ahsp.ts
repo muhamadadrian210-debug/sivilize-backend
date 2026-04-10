@@ -11,6 +11,125 @@ export interface AHSPTemplate {
 }
 
 export const AHSP_TEMPLATES: AHSPTemplate[] = [
+  // ══════════════════════════════════════════════════════════
+  // PEKERJAAN PERSIAPAN — wajib ada di setiap RAB kontraktor
+  // ══════════════════════════════════════════════════════════
+  {
+    id: 'per-001',
+    category: 'Persiapan',
+    name: 'Pembersihan Lokasi & Perataan Tanah',
+    unit: 'm2',
+    materials: [],
+    laborCoefficients: [
+      { name: 'Pekerja', coeff: 0.1, unit: 'OH' },
+      { name: 'Mandor', coeff: 0.005, unit: 'OH' },
+    ],
+    productivity: 50,
+  },
+  {
+    id: 'per-002',
+    category: 'Persiapan',
+    name: 'Pemasangan Bouwplank (Bowplank)',
+    unit: 'm1',
+    materials: [
+      { name: 'Kayu Kaso 5/7', coeff: 0.012, unit: 'm3' },
+      { name: 'Papan Kayu 2/20', coeff: 0.007, unit: 'm3' },
+      { name: 'Paku', coeff: 0.1, unit: 'kg' },
+    ],
+    laborCoefficients: [
+      { name: 'Pekerja', coeff: 0.1, unit: 'OH' },
+      { name: 'Tukang Kayu', coeff: 0.1, unit: 'OH' },
+      { name: 'Kepala Tukang', coeff: 0.01, unit: 'OH' },
+      { name: 'Mandor', coeff: 0.005, unit: 'OH' },
+    ],
+    productivity: 20,
+  },
+  {
+    id: 'per-003',
+    category: 'Persiapan',
+    name: 'Pembuatan Gudang Bahan & Alat',
+    unit: 'm2',
+    materials: [
+      { name: 'Kayu Kaso 5/7', coeff: 0.02, unit: 'm3' },
+      { name: 'Papan Kayu 2/20', coeff: 0.015, unit: 'm3' },
+      { name: 'Seng Gelombang', coeff: 1.1, unit: 'm2' },
+      { name: 'Paku', coeff: 0.3, unit: 'kg' },
+    ],
+    laborCoefficients: [
+      { name: 'Pekerja', coeff: 0.5, unit: 'OH' },
+      { name: 'Tukang Kayu', coeff: 0.5, unit: 'OH' },
+      { name: 'Kepala Tukang', coeff: 0.05, unit: 'OH' },
+      { name: 'Mandor', coeff: 0.025, unit: 'OH' },
+    ],
+    productivity: 4,
+  },
+  {
+    id: 'per-004',
+    category: 'Persiapan',
+    name: 'Pembuatan Direksi Keet (Kantor Lapangan)',
+    unit: 'm2',
+    materials: [
+      { name: 'Kayu Kaso 5/7', coeff: 0.025, unit: 'm3' },
+      { name: 'Papan Kayu 2/20', coeff: 0.02, unit: 'm3' },
+      { name: 'Seng Gelombang', coeff: 1.1, unit: 'm2' },
+      { name: 'Paku', coeff: 0.4, unit: 'kg' },
+      { name: 'Kaca Polos 5mm', coeff: 0.1, unit: 'm2' },
+    ],
+    laborCoefficients: [
+      { name: 'Pekerja', coeff: 0.6, unit: 'OH' },
+      { name: 'Tukang Kayu', coeff: 0.6, unit: 'OH' },
+      { name: 'Kepala Tukang', coeff: 0.06, unit: 'OH' },
+      { name: 'Mandor', coeff: 0.03, unit: 'OH' },
+    ],
+    productivity: 3,
+  },
+  {
+    id: 'per-005',
+    category: 'Persiapan',
+    name: 'Pengukuran & Pemasangan Patok',
+    unit: 'ls',
+    materials: [
+      { name: 'Kayu Kaso 5/7', coeff: 0.005, unit: 'm3' },
+      { name: 'Paku', coeff: 0.05, unit: 'kg' },
+      { name: 'Cat Kayu', coeff: 0.1, unit: 'kg' },
+    ],
+    laborCoefficients: [
+      { name: 'Pekerja', coeff: 2.0, unit: 'OH' },
+      { name: 'Tukang Kayu', coeff: 1.0, unit: 'OH' },
+      { name: 'Mandor', coeff: 0.2, unit: 'OH' },
+    ],
+    productivity: 1,
+  },
+  {
+    id: 'per-006',
+    category: 'Persiapan',
+    name: 'Mobilisasi & Demobilisasi Alat',
+    unit: 'ls',
+    materials: [],
+    laborCoefficients: [
+      { name: 'Pekerja', coeff: 4.0, unit: 'OH' },
+      { name: 'Mandor', coeff: 0.5, unit: 'OH' },
+    ],
+    productivity: 1,
+  },
+  {
+    id: 'per-007',
+    category: 'Persiapan',
+    name: 'Pemasangan Papan Nama Proyek',
+    unit: 'bh',
+    materials: [
+      { name: 'Papan Kayu 2/20', coeff: 0.01, unit: 'm3' },
+      { name: 'Kayu Kaso 5/7', coeff: 0.008, unit: 'm3' },
+      { name: 'Cat Kayu', coeff: 0.5, unit: 'kg' },
+      { name: 'Paku', coeff: 0.1, unit: 'kg' },
+    ],
+    laborCoefficients: [
+      { name: 'Pekerja', coeff: 0.5, unit: 'OH' },
+      { name: 'Tukang Kayu', coeff: 0.5, unit: 'OH' },
+      { name: 'Mandor', coeff: 0.05, unit: 'OH' },
+    ],
+    productivity: 1,
+  },
   // STRUKTUR
   {
     id: 'str-001',

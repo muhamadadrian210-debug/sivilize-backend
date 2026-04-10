@@ -109,7 +109,10 @@ const defaultMaterials: Record<string, number> = {
   'Batu Kali': 280000,        // per m³
   'Pasir Urug': 180000,       // per m³
 
-  // === BEKISTING ===
+  // === PERSIAPAN ===
+  'Kayu Kaso 5/7': 3500000,     // per m³
+  'Papan Kayu 2/20': 3200000,   // per m³
+  'Seng Gelombang': 85000,      // per m²
   'Kayu Bekisting': 3200000,  // per m³ (kayu kelas III)
   'Paku': 22000,              // per kg
   'Minyak Bekisting': 15000,  // per liter
