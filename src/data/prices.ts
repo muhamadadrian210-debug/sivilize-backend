@@ -1,4 +1,4 @@
-export interface CityPrices {
+﻿export interface CityPrices {
   id: string;
   name: string;
   provinceId: string;
@@ -17,12 +17,12 @@ export interface ProvinceOption {
 
 export type MaterialGrade = 'A' | 'B' | 'C';
 
-// Tipe lokasi proyek — menentukan multiplier ongkos angkut
+// Tipe lokasi proyek â€” menentukan multiplier ongkos angkut
 export type LocationType = 'kota' | 'pinggiran' | 'pelosok' | 'sangat-terpencil';
 
 export const LOCATION_TYPE_OPTIONS: { id: LocationType; label: string; multiplier: number; desc: string }[] = [
   { id: 'kota',            label: 'Pusat Kota',        multiplier: 1.00, desc: 'Akses mudah, material tersedia' },
-  { id: 'pinggiran',       label: 'Pinggiran Kota',    multiplier: 1.08, desc: 'Jarak 10–30km dari pusat kota' },
+  { id: 'pinggiran',       label: 'Pinggiran Kota',    multiplier: 1.08, desc: 'Jarak 10â€“30km dari pusat kota' },
   { id: 'pelosok',         label: 'Pelosok/Desa',      multiplier: 1.18, desc: 'Jarak >30km, akses terbatas' },
   { id: 'sangat-terpencil',label: 'Sangat Terpencil',  multiplier: 1.35, desc: 'Pulau terpencil, pegunungan, akses sulit' },
 ];
@@ -47,9 +47,9 @@ export interface RegionalPriceOverride {
 const defaultMaterials: Record<string, number> = {
   // === STRUKTUR ===
   'Semen PC': 1350,           // per kg (~Rp 67.500/sak 50kg)
-  'Pasir Pasang': 280000,     // per m³
-  'Pasir Beton': 320000,      // per m³
-  'Krikil (Split)': 330000,   // per m³
+  'Pasir Pasang': 280000,     // per mÂ³
+  'Pasir Beton': 320000,      // per mÂ³
+  'Krikil (Split)': 330000,   // per mÂ³
   'Bata Merah': 800,          // per buah
   'Besi Beton': 14500,        // per kg
   'Kawat Beton': 22000,       // per kg
@@ -62,8 +62,8 @@ const defaultMaterials: Record<string, number> = {
   'Cat Kayu': 75000,          // per kg
 
   // === KAYU & KUSEN ===
-  'Kayu Kusen': 4500000,      // per m³ (kayu kelas II)
-  'Kayu Rangka Atap': 3800000,// per m³
+  'Kayu Kusen': 4500000,      // per mÂ³ (kayu kelas II)
+  'Kayu Rangka Atap': 3800000,// per mÂ³
 
   // === PINTU ===
   'Daun Pintu Panel': 850000, // per unit (pintu panel kayu)
@@ -75,7 +75,7 @@ const defaultMaterials: Record<string, number> = {
   'Daun Jendela': 350000,     // per unit
   'Engsel Jendela': 35000,    // per buah
   'Grendel': 25000,           // per buah
-  'Kaca Polos 5mm': 120000,   // per m²
+  'Kaca Polos 5mm': 120000,   // per mÂ²
 
   // === ALUMINIUM ===
   'Kusen Aluminium': 850000,  // per set (kusen + frame)
@@ -110,22 +110,22 @@ const defaultMaterials: Record<string, number> = {
   'MCB 1 Phase': 85000,       // per buah
 
   // === ATAP ===
-  'Genteng Beton': 8500,      // per buah (~14 buah/m²)
+  'Genteng Beton': 8500,      // per buah (~14 buah/mÂ²)
   'Genteng Keramik': 12000,   // per buah
-  'Spandek/Galvalum': 85000,  // per m²
+  'Spandek/Galvalum': 85000,  // per mÂ²
   'Baja Ringan C75': 18500,   // per kg
   'Reng Baja Ringan': 12000,  // per kg
   'Sekrup Roofing': 850,      // per buah
   'Sealant': 45000,           // per kg
 
   // === PONDASI ===
-  'Batu Kali': 280000,        // per m³
-  'Pasir Urug': 180000,       // per m³
+  'Batu Kali': 280000,        // per mÂ³
+  'Pasir Urug': 180000,       // per mÂ³
 
   // === PERSIAPAN ===
-  'Kayu Kaso 5/7': 3500000,     // per m³
-  'Papan Kayu 2/20': 3200000,   // per m³
-  'Seng Gelombang': 85000,      // per m²
+  'Kayu Kaso 5/7': 3500000,     // per mÂ³
+  'Papan Kayu 2/20': 3200000,   // per mÂ³
+  'Seng Gelombang': 85000,      // per mÂ²
   // === K3 ===
   'Helm Proyek': 85000,         // per buah
   'Rompi Safety': 65000,        // per buah
@@ -134,7 +134,7 @@ const defaultMaterials: Record<string, number> = {
   'Kacamata Safety': 35000,     // per buah
   'Kotak P3K': 150000,          // per set
   'APAR (Alat Pemadam)': 350000,// per buah
-  'Kayu Bekisting': 3200000,  // per m³ (kayu kelas III)
+  'Kayu Bekisting': 3200000,  // per mÂ³ (kayu kelas III)
   'Paku': 22000,              // per kg
   'Minyak Bekisting': 15000,  // per liter
 };
@@ -154,48 +154,44 @@ const defaultLabor = {
 };
 
 export const PROVINCES: ProvinceOption[] = [
-  { id: 'aceh', name: 'Aceh', region: 'Sumatera', cities: ['Banda Aceh', 'Lhokseumawe', 'Meulaboh', 'Langsa', 'Sabang', 'Subulussalam', 'Bireuen', 'Sigli', 'Takengon', 'Blangpidie'] },
-  { id: 'sumut', name: 'Sumatera Utara', region: 'Sumatera', cities: ['Medan', 'Pematangsiantar', 'Binjai', 'Tebing Tinggi', 'Tanjungbalai', 'Sibolga', 'Padangsidimpuan', 'Gunungsitoli', 'Balige', 'Kabanjahe'] },
-  { id: 'sumbar', name: 'Sumatera Barat', region: 'Sumatera', cities: ['Padang', 'Bukittinggi', 'Payakumbuh', 'Solok', 'Sawahlunto', 'Padang Panjang', 'Pariaman', 'Lubuk Basung', 'Muaro Sijunjung', 'Painan'] },
-  { id: 'riau', name: 'Riau', region: 'Sumatera', cities: ['Pekanbaru', 'Dumai', 'Bagansiapiapi', 'Bangkinang', 'Rengat', 'Tembilahan', 'Pasir Pengaraian', 'Siak Sri Indrapura', 'Bengkalis', 'Selat Panjang'] },
-  { id: 'jambi', name: 'Jambi', region: 'Sumatera', cities: ['Jambi', 'Sungai Penuh', 'Muara Bungo', 'Muara Bulian', 'Kuala Tungkal', 'Sarolangun', 'Bangko', 'Muara Sabak', 'Muara Tebo'] },
-  { id: 'sumsel', name: 'Sumatera Selatan', region: 'Sumatera', cities: ['Palembang', 'Prabumulih', 'Lubuklinggau', 'Pagar Alam', 'Baturaja', 'Muara Enim', 'Sekayu', 'Kayuagung', 'Lahat', 'Indralaya'] },
-  { id: 'bengkulu', name: 'Bengkulu', region: 'Sumatera', cities: ['Bengkulu', 'Curup', 'Manna', 'Arga Makmur', 'Mukomuko', 'Kaur', 'Kepahiang', 'Lebong'] },
-  { id: 'lampung', name: 'Lampung', region: 'Sumatera', cities: ['Bandar Lampung', 'Metro', 'Kotabumi', 'Liwa', 'Kalianda', 'Blambangan Umpu', 'Menggala', 'Sukadana', 'Pringsewu', 'Gunung Sugih'] },
-  { id: 'babel', name: 'Kepulauan Bangka Belitung', region: 'Sumatera', cities: ['Pangkalpinang', 'Tanjung Pandan', 'Sungailiat', 'Koba', 'Toboali', 'Manggar', 'Muntok'] },
-  { id: 'kepri', name: 'Kepulauan Riau', region: 'Sumatera', cities: ['Tanjungpinang', 'Batam', 'Ranai', 'Daik', 'Tarempa', 'Dabo Singkep', 'Karimun'] },
-  { id: 'jakarta', name: 'DKI Jakarta', region: 'Jawa', cities: ['Jakarta Pusat', 'Jakarta Selatan', 'Jakarta Barat', 'Jakarta Utara', 'Jakarta Timur', 'Kepulauan Seribu'] },
-  { id: 'jabar', name: 'Jawa Barat', region: 'Jawa', cities: ['Bandung', 'Bekasi', 'Bogor', 'Depok', 'Cimahi', 'Tasikmalaya', 'Cirebon', 'Sukabumi', 'Banjar', 'Karawang', 'Purwakarta', 'Subang', 'Garut', 'Cianjur', 'Kuningan'] },
-  { id: 'jateng', name: 'Jawa Tengah', region: 'Jawa', cities: ['Semarang', 'Surakarta', 'Tegal', 'Pekalongan', 'Salatiga', 'Magelang', 'Purwokerto', 'Kudus', 'Jepara', 'Demak', 'Blora', 'Rembang', 'Pati', 'Grobogan', 'Wonogiri'] },
-  { id: 'yogyakarta', name: 'DI Yogyakarta', region: 'Jawa', cities: ['Yogyakarta', 'Sleman', 'Bantul', 'Wonosari', 'Wates'] },
-  { id: 'jatim', name: 'Jawa Timur', region: 'Jawa', cities: ['Surabaya', 'Malang', 'Madiun', 'Kediri', 'Blitar', 'Mojokerto', 'Pasuruan', 'Probolinggo', 'Batu', 'Jember', 'Banyuwangi', 'Situbondo', 'Bondowoso', 'Lumajang', 'Jombang'] },
-  { id: 'banten', name: 'Banten', region: 'Jawa', cities: ['Serang', 'Tangerang', 'Cilegon', 'Tangerang Selatan', 'Pandeglang', 'Lebak', 'Rangkasbitung'] },
-  { id: 'bali', name: 'Bali', region: 'Nusa Tenggara', cities: ['Denpasar', 'Singaraja', 'Tabanan', 'Gianyar', 'Klungkung', 'Bangli', 'Negara', 'Amlapura', 'Semarapura'] },
-  { id: 'ntb', name: 'Nusa Tenggara Barat', region: 'Nusa Tenggara', cities: ['Mataram', 'Bima', 'Sumbawa Besar', 'Praya', 'Selong', 'Taliwang', 'Dompu', 'Woha', 'Alas'] },
-  { id: 'ntt', name: 'Nusa Tenggara Timur', region: 'Nusa Tenggara', cities: [
-    'Kupang', 'Soe', 'Kefamenanu', 'Atambua', 'Maumere', 'Ende', 'Ruteng',
-    'Bajawa', 'Labuan Bajo', 'Waingapu', 'Waikabubak', 'Larantuka',
-    'Lewoleba', 'Kalabahi', 'Borong', 'Tambolaka', 'Oelamasi', 'Betun'
-  ] },
-  { id: 'kalbar', name: 'Kalimantan Barat', region: 'Kalimantan', cities: ['Pontianak', 'Singkawang', 'Ketapang', 'Sanggau', 'Sintang', 'Putussibau', 'Ngabang', 'Mempawah', 'Sambas', 'Bengkayang'] },
-  { id: 'kalteng', name: 'Kalimantan Tengah', region: 'Kalimantan', cities: ['Palangka Raya', 'Sampit', 'Pangkalan Bun', 'Muara Teweh', 'Buntok', 'Kuala Kapuas', 'Kasongan', 'Sukamara', 'Lamandau', 'Nanga Bulik'] },
-  { id: 'kalsel', name: 'Kalimantan Selatan', region: 'Kalimantan', cities: ['Banjarmasin', 'Banjarbaru', 'Kotabaru', 'Martapura', 'Rantau', 'Pelaihari', 'Marabahan', 'Kandangan', 'Barabai', 'Amuntai'] },
-  { id: 'kaltim', name: 'Kalimantan Timur', region: 'Kalimantan', cities: ['Samarinda', 'Balikpapan', 'Bontang', 'Tenggarong', 'Sangatta', 'Penajam', 'Tanjung Redeb', 'Sendawar', 'Tanah Grogot'] },
-  { id: 'kalut', name: 'Kalimantan Utara', region: 'Kalimantan', cities: ['Tanjung Selor', 'Tarakan', 'Nunukan', 'Malinau', 'Tideng Pale'] },
-  { id: 'sulut', name: 'Sulawesi Utara', region: 'Sulawesi', cities: ['Manado', 'Bitung', 'Tomohon', 'Kotamobagu', 'Amurang', 'Tondano', 'Tahuna', 'Melonguane', 'Ondong Siau'] },
-  { id: 'gorontalo', name: 'Gorontalo', region: 'Sulawesi', cities: ['Gorontalo', 'Limboto', 'Marisa', 'Kwandang', 'Tilamuta', 'Isimu', 'Suwawa'] },
-  { id: 'sulteng', name: 'Sulawesi Tengah', region: 'Sulawesi', cities: ['Palu', 'Poso', 'Luwuk', 'Tolitoli', 'Buol', 'Parigi', 'Ampana', 'Kolonedale', 'Banggai', 'Salakan'] },
-  { id: 'sulbar', name: 'Sulawesi Barat', region: 'Sulawesi', cities: ['Mamuju', 'Majene', 'Polewali', 'Pasangkayu', 'Mamasa', 'Topoyo'] },
-  { id: 'sulsel', name: 'Sulawesi Selatan', region: 'Sulawesi', cities: ['Makassar', 'Parepare', 'Palopo', 'Watampone', 'Sengkang', 'Bulukumba', 'Bantaeng', 'Jeneponto', 'Takalar', 'Gowa', 'Maros', 'Pangkep', 'Barru', 'Pinrang', 'Enrekang'] },
-  { id: 'sultra', name: 'Sulawesi Tenggara', region: 'Sulawesi', cities: ['Kendari', 'Baubau', 'Raha', 'Unaaha', 'Andoolo', 'Lasusua', 'Kolaka', 'Wanggudu', 'Pasarwajo'] },
-  { id: 'maluku', name: 'Maluku', region: 'Maluku', cities: ['Ambon', 'Tual', 'Masohi', 'Namlea', 'Saumlaki', 'Dobo', 'Bula', 'Werinama', 'Amahai'] },
-  { id: 'malut', name: 'Maluku Utara', region: 'Maluku', cities: ['Sofifi', 'Ternate', 'Tidore', 'Tobelo', 'Labuha', 'Sanana', 'Weda', 'Daruba'] },
-  { id: 'papua', name: 'Papua', region: 'Papua', cities: ['Jayapura', 'Sentani', 'Sarmi', 'Biak', 'Serui', 'Merauke', 'Abepura', 'Depapre'] },
-  { id: 'papua-barat', name: 'Papua Barat', region: 'Papua', cities: ['Manokwari', 'Fakfak', 'Kaimana', 'Bintuni', 'Ransiki', 'Babo', 'Wasior'] },
-  { id: 'papua-barat-daya', name: 'Papua Barat Daya', region: 'Papua', cities: ['Sorong', 'Aimas', 'Teminabuan', 'Ayamaru', 'Inawatan', 'Kokoda'] },
-  { id: 'papua-tengah', name: 'Papua Tengah', region: 'Papua', cities: ['Nabire', 'Enarotali', 'Timika', 'Sugapa', 'Ilaga', 'Obano'] },
-  { id: 'papua-pegunungan', name: 'Papua Pegunungan', region: 'Papua', cities: ['Wamena', 'Oksibil', 'Karubaga', 'Tiom', 'Kobakma', 'Kenyam'] },
-  { id: 'papua-selatan', name: 'Papua Selatan', region: 'Papua', cities: ['Merauke', 'Agats', 'Tanah Merah', 'Kepi', 'Bade'] },
+  { id: 'aceh', name: 'Aceh', region: 'Sumatera', cities: ['Banda Aceh','Sabang','Langsa','Lhokseumawe','Subulussalam','Aceh Besar','Pidie','Pidie Jaya','Bireuen','Aceh Utara','Aceh Timur','Aceh Tamiang','Aceh Tengah','Bener Meriah','Gayo Lues','Aceh Tenggara','Aceh Selatan','Aceh Barat Daya','Nagan Raya','Aceh Barat','Aceh Jaya','Simeulue','Aceh Singkil'] },
+  { id: 'sumut', name: 'Sumatera Utara', region: 'Sumatera', cities: ['Medan','Binjai','Tebing Tinggi','Pematangsiantar','Tanjungbalai','Sibolga','Padangsidimpuan','Gunungsitoli','Deli Serdang','Langkat','Karo','Simalungun','Asahan','Labuhanbatu','Labuhanbatu Utara','Labuhanbatu Selatan','Tapanuli Utara','Tapanuli Tengah','Tapanuli Selatan','Mandailing Natal','Padang Lawas','Padang Lawas Utara','Humbang Hasundutan','Toba','Samosir','Dairi','Pakpak Bharat','Nias','Nias Utara','Nias Barat','Nias Selatan','Batubara','Serdang Bedagai'] },
+  { id: 'sumbar', name: 'Sumatera Barat', region: 'Sumatera', cities: ['Padang','Solok','Sawahlunto','Padang Panjang','Bukittinggi','Payakumbuh','Pariaman','Agam','Tanah Datar','Lima Puluh Kota','Pasaman','Pasaman Barat','Solok Selatan','Dharmasraya','Sijunjung','Pesisir Selatan','Padang Pariaman','Kepulauan Mentawai'] },
+  { id: 'riau', name: 'Riau', region: 'Sumatera', cities: ['Pekanbaru','Dumai','Kampar','Pelalawan','Siak','Bengkalis','Kepulauan Meranti','Rokan Hulu','Rokan Hilir','Indragiri Hulu','Indragiri Hilir','Kuantan Singingi'] },
+  { id: 'jambi', name: 'Jambi', region: 'Sumatera', cities: ['Jambi','Sungai Penuh','Batanghari','Muaro Jambi','Tanjung Jabung Barat','Tanjung Jabung Timur','Bungo','Tebo','Sarolangun','Merangin','Kerinci'] },
+  { id: 'sumsel', name: 'Sumatera Selatan', region: 'Sumatera', cities: ['Palembang','Prabumulih','Pagar Alam','Lubuklinggau','Ogan Komering Ulu','Ogan Komering Ulu Timur','Ogan Komering Ulu Selatan','Ogan Komering Ilir','Ogan Ilir','Muara Enim','Lahat','Empat Lawang','Musi Banyuasin','Banyuasin','Musi Rawas','Musi Rawas Utara','Penukal Abab Lematang Ilir'] },
+  { id: 'bengkulu', name: 'Bengkulu', region: 'Sumatera', cities: ['Bengkulu','Bengkulu Utara','Bengkulu Tengah','Bengkulu Selatan','Rejang Lebong','Kepahiang','Lebong','Mukomuko','Seluma','Kaur'] },
+  { id: 'lampung', name: 'Lampung', region: 'Sumatera', cities: ['Bandar Lampung','Metro','Lampung Utara','Lampung Tengah','Lampung Selatan','Lampung Barat','Lampung Timur','Tulang Bawang','Tulang Bawang Barat','Tanggamus','Pringsewu','Pesawaran','Mesuji','Way Kanan','Pesisir Barat'] },
+  { id: 'babel', name: 'Kepulauan Bangka Belitung', region: 'Sumatera', cities: ['Pangkalpinang','Bangka','Bangka Barat','Bangka Tengah','Bangka Selatan','Belitung','Belitung Timur'] },
+  { id: 'kepri', name: 'Kepulauan Riau', region: 'Sumatera', cities: ['Tanjungpinang','Batam','Bintan','Karimun','Natuna','Lingga','Kepulauan Anambas'] },
+  { id: 'jakarta', name: 'DKI Jakarta', region: 'Jawa', cities: ['Jakarta Pusat','Jakarta Utara','Jakarta Barat','Jakarta Selatan','Jakarta Timur','Kepulauan Seribu'] },
+  { id: 'jabar', name: 'Jawa Barat', region: 'Jawa', cities: ['Bandung','Bogor','Bekasi','Depok','Cimahi','Tasikmalaya','Banjar','Sukabumi','Cirebon','Bogor (Kab)','Sukabumi (Kab)','Cianjur','Bandung (Kab)','Garut','Tasikmalaya (Kab)','Ciamis','Pangandaran','Kuningan','Cirebon (Kab)','Majalengka','Sumedang','Indramayu','Subang','Purwakarta','Karawang','Bekasi (Kab)','Bandung Barat'] },
+  { id: 'jateng', name: 'Jawa Tengah', region: 'Jawa', cities: ['Semarang','Surakarta','Salatiga','Magelang','Pekalongan','Tegal','Cilacap','Banyumas','Purbalingga','Banjarnegara','Kebumen','Purworejo','Wonosobo','Magelang (Kab)','Boyolali','Klaten','Sukoharjo','Wonogiri','Karanganyar','Sragen','Grobogan','Blora','Rembang','Pati','Kudus','Jepara','Demak','Semarang (Kab)','Temanggung','Kendal','Batang','Pekalongan (Kab)','Pemalang','Tegal (Kab)','Brebes'] },
+  { id: 'yogyakarta', name: 'DI Yogyakarta', region: 'Jawa', cities: ['Yogyakarta','Bantul','Sleman','Gunungkidul','Kulon Progo'] },
+  { id: 'jatim', name: 'Jawa Timur', region: 'Jawa', cities: ['Surabaya','Malang','Batu','Madiun','Kediri','Blitar','Probolinggo','Pasuruan','Mojokerto','Pacitan','Ponorogo','Trenggalek','Tulungagung','Blitar (Kab)','Kediri (Kab)','Malang (Kab)','Lumajang','Jember','Banyuwangi','Bondowoso','Situbondo','Probolinggo (Kab)','Pasuruan (Kab)','Sidoarjo','Mojokerto (Kab)','Jombang','Nganjuk','Madiun (Kab)','Magetan','Ngawi','Bojonegoro','Tuban','Lamongan','Gresik','Bangkalan','Sampang','Pamekasan','Sumenep'] },
+  { id: 'banten', name: 'Banten', region: 'Jawa', cities: ['Serang','Cilegon','Tangerang','Tangerang Selatan','Serang (Kab)','Pandeglang','Lebak','Tangerang (Kab)'] },
+  { id: 'bali', name: 'Bali', region: 'Nusa Tenggara', cities: ['Denpasar','Badung','Gianyar','Tabanan','Jembrana','Buleleng','Bangli','Klungkung','Karangasem'] },
+  { id: 'ntb', name: 'Nusa Tenggara Barat', region: 'Nusa Tenggara', cities: ['Mataram','Bima','Lombok Barat','Lombok Tengah','Lombok Timur','Lombok Utara','Sumbawa','Sumbawa Barat','Dompu','Bima (Kab)'] },
+  { id: 'ntt', name: 'Nusa Tenggara Timur', region: 'Nusa Tenggara', cities: ['Kupang','Kupang (Kab)','Timor Tengah Selatan','Timor Tengah Utara','Belu','Malaka','Alor','Flores Timur','Lembata','Sikka','Ende','Ngada','Nagekeo','Manggarai','Manggarai Barat','Manggarai Timur','Sumba Barat','Sumba Barat Daya','Sumba Tengah','Sumba Timur','Sabu Raijua','Rote Ndao'] },
+  { id: 'kalbar', name: 'Kalimantan Barat', region: 'Kalimantan', cities: ['Pontianak','Singkawang','Pontianak (Kab)','Kubu Raya','Mempawah','Sambas','Bengkayang','Landak','Sanggau','Sekadau','Sintang','Melawi','Kapuas Hulu','Kayong Utara','Ketapang'] },
+  { id: 'kalteng', name: 'Kalimantan Tengah', region: 'Kalimantan', cities: ['Palangka Raya','Kotawaringin Barat','Kotawaringin Timur','Kapuas','Barito Selatan','Barito Utara','Barito Timur','Murung Raya','Pulang Pisau','Gunung Mas','Katingan','Seruyan','Sukamara','Lamandau'] },
+  { id: 'kalsel', name: 'Kalimantan Selatan', region: 'Kalimantan', cities: ['Banjarmasin','Banjarbaru','Banjar','Barito Kuala','Tapin','Hulu Sungai Selatan','Hulu Sungai Tengah','Hulu Sungai Utara','Balangan','Tabalong','Tanah Laut','Tanah Bumbu','Kotabaru'] },
+  { id: 'kaltim', name: 'Kalimantan Timur', region: 'Kalimantan', cities: ['Samarinda','Balikpapan','Bontang','Kutai Kartanegara','Kutai Barat','Kutai Timur','Berau','Paser','Penajam Paser Utara','Mahakam Ulu'] },
+  { id: 'kalut', name: 'Kalimantan Utara', region: 'Kalimantan', cities: ['Tarakan','Bulungan','Malinau','Nunukan','Tana Tidung'] },
+  { id: 'sulut', name: 'Sulawesi Utara', region: 'Sulawesi', cities: ['Manado','Bitung','Tomohon','Kotamobagu','Minahasa','Minahasa Utara','Minahasa Selatan','Minahasa Tenggara','Bolaang Mongondow','Bolaang Mongondow Utara','Bolaang Mongondow Selatan','Bolaang Mongondow Timur','Kepulauan Sangihe','Kepulauan Talaud','Kepulauan Siau Tagulandang Biaro'] },
+  { id: 'gorontalo', name: 'Gorontalo', region: 'Sulawesi', cities: ['Gorontalo','Gorontalo (Kab)','Boalemo','Pohuwato','Bone Bolango','Gorontalo Utara'] },
+  { id: 'sulteng', name: 'Sulawesi Tengah', region: 'Sulawesi', cities: ['Palu','Donggala','Sigi','Parigi Moutong','Poso','Tojo Una-Una','Banggai','Banggai Kepulauan','Banggai Laut','Morowali','Morowali Utara','Tolitoli','Buol'] },
+  { id: 'sulbar', name: 'Sulawesi Barat', region: 'Sulawesi', cities: ['Mamuju','Mamuju Tengah','Mamuju Utara','Majene','Polewali Mandar','Mamasa'] },
+  { id: 'sulsel', name: 'Sulawesi Selatan', region: 'Sulawesi', cities: ['Makassar','Parepare','Palopo','Gowa','Takalar','Jeneponto','Bantaeng','Bulukumba','Sinjai','Bone','Soppeng','Wajo','Sidrap','Pinrang','Enrekang','Luwu','Luwu Utara','Luwu Timur','Tana Toraja','Toraja Utara','Maros','Pangkep','Barru','Kepulauan Selayar'] },
+  { id: 'sultra', name: 'Sulawesi Tenggara', region: 'Sulawesi', cities: ['Kendari','Baubau','Konawe','Konawe Selatan','Konawe Utara','Konawe Kepulauan','Kolaka','Kolaka Utara','Kolaka Timur','Bombana','Buton','Buton Utara','Buton Selatan','Buton Tengah','Muna','Muna Barat','Wakatobi'] },
+  { id: 'maluku', name: 'Maluku', region: 'Maluku', cities: ['Ambon','Tual','Maluku Tengah','Maluku Tenggara','Maluku Tenggara Barat','Maluku Barat Daya','Kepulauan Aru','Seram Bagian Barat','Seram Bagian Timur','Buru','Buru Selatan'] },
+  { id: 'malut', name: 'Maluku Utara', region: 'Maluku', cities: ['Ternate','Tidore Kepulauan','Halmahera Barat','Halmahera Tengah','Halmahera Utara','Halmahera Selatan','Halmahera Timur','Kepulauan Sula','Pulau Taliabu','Pulau Morotai'] },
+  { id: 'papua', name: 'Papua', region: 'Papua', cities: ['Jayapura','Jayapura (Kab)','Keerom','Sarmi','Mamberamo Raya','Biak Numfor','Supiori','Kepulauan Yapen','Waropen'] },
+  { id: 'papua-barat', name: 'Papua Barat', region: 'Papua', cities: ['Manokwari','Manokwari Selatan','Pegunungan Arfak','Teluk Bintuni','Teluk Wondama','Fakfak','Kaimana','Sorong Selatan','Raja Ampat'] },
+  { id: 'papua-barat-daya', name: 'Papua Barat Daya', region: 'Papua', cities: ['Sorong','Sorong (Kab)','Maybrat','Tambrauw'] },
+  { id: 'papua-tengah', name: 'Papua Tengah', region: 'Papua', cities: ['Nabire','Paniai','Mimika','Dogiyai','Intan Jaya','Deiyai','Puncak','Puncak Jaya'] },
+  { id: 'papua-pegunungan', name: 'Papua Pegunungan', region: 'Papua', cities: ['Wamena','Jayawijaya','Lanny Jaya','Mamberamo Tengah','Nduga','Pegunungan Bintang','Tolikara','Yahukimo','Yalimo'] },
+  { id: 'papua-selatan', name: 'Papua Selatan', region: 'Papua', cities: ['Merauke','Boven Digoel','Mappi','Asmat'] },
 ];
 
 export const CITIES: CityPrices[] = PROVINCES.flatMap((province) => {
