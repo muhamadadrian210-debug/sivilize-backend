@@ -75,7 +75,16 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+// Handle preflight untuk semua route
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Origin', res.getHeader('Access-Control-Allow-Origin') || '*');
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 // ============================================================
 // 6. RATE LIMITING - Berbeda per endpoint
@@ -254,7 +263,7 @@ app.get('/health', (req, res) => {
 });
 
 // 404
-app.use('*', (req, res) => {
+app.use((req, res) => {
   res.status(404).json({ success: false, message: 'API endpoint not found' });
 });
 

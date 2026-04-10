@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   Users, FolderOpen, Shield,
   RefreshCw, CheckCircle2, XCircle, AlertTriangle,
   Crown, User, Server, Database,
-  TrendingUp, Lock, Clock
+  TrendingUp, Lock
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { formatCurrency } from '../../utils/calculations';

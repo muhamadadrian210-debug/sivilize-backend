@@ -1,18 +1,14 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useStore } from '../store/useStore';
 import type { ProjectVersion } from '../store/useStore';
 
 interface UseAutoSaveOptions {
   projectId: string | null;
   data: Partial<ProjectVersion> | null;
-  intervalMs?: number; // default 30 detik
+  intervalMs?: number;
   enabled?: boolean;
 }
 
-/**
- * Auto-save hook — simpan draft ke localStorage setiap N detik
- * Berguna saat koneksi internet di lapangan (NTT/Papua) terputus
- */
 export const useAutoSave = ({
   projectId,
   data,
@@ -21,15 +17,14 @@ export const useAutoSave = ({
 }: UseAutoSaveOptions) => {
   const { saveAutoSaveDraft, clearAutoSaveDraft } = useStore();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const lastSavedRef = useRef<number>(0);
+  const [lastSavedAt, setLastSavedAt] = useState<number>(0);
 
   const save = useCallback(() => {
     if (!projectId || !data || !enabled) return;
     saveAutoSaveDraft(projectId, data);
-    lastSavedRef.current = Date.now();
+    setLastSavedAt(Date.now());
   }, [projectId, data, enabled, saveAutoSaveDraft]);
 
-  // Auto-save interval
   useEffect(() => {
     if (!enabled || !projectId) return;
     timerRef.current = setInterval(save, intervalMs);
@@ -38,7 +33,6 @@ export const useAutoSave = ({
     };
   }, [save, intervalMs, enabled, projectId]);
 
-  // Save on page unload (koneksi putus tiba-tiba)
   useEffect(() => {
     const handleUnload = () => save();
     window.addEventListener('beforeunload', handleUnload);
@@ -49,5 +43,5 @@ export const useAutoSave = ({
     if (projectId) clearAutoSaveDraft(projectId);
   }, [projectId, clearAutoSaveDraft]);
 
-  return { save, clearDraft, lastSavedAt: lastSavedRef.current };
+  return { save, clearDraft, lastSavedAt };
 };

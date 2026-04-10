@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import {
-  Upload, Download, RefreshCw, AlertTriangle, CheckCircle2,
+  Upload, Download,
   Edit, Save, X, Info, MapPin, Calendar
 } from 'lucide-react';
 import {

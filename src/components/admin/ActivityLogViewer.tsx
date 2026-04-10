@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Clock, User, FileText, Trash2, Edit, Plus, Download, LogIn, LogOut, Filter } from 'lucide-react';
+import { Clock, User, Trash2, Edit, Plus, Download, LogIn, LogOut, Filter } from 'lucide-react';
 import { useStore, type ActivityLog } from '../../store/useStore';
-import { formatCurrency } from '../../utils/calculations';
 
 const ACTION_ICONS = {
   create: <Plus size={14} className="text-green-400" />,

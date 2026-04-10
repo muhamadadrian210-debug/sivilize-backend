@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Sparkles, User, Loader2, Trash2 } from 'lucide-react';
+import { X, Send, Sparkles, User, Trash2 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 
 interface Message {
@@ -57,7 +57,7 @@ const callGemini = async (messages: Message[], userInput: string): Promise<strin
 };
 
 const AIChat = () => {
-  const { activeTab } = useStore();
+  useStore();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -91,7 +91,7 @@ const AIChat = () => {
     try {
       const reply = await callGemini(messages, userText);
       setMessages(prev => [...prev, { sender: 'ai', text: reply, timestamp: new Date() }]);
-    } catch (err) {
+    } catch {
       // Fallback ke response sederhana
       const fallbacks: Record<string, string> = {
         'rab': 'RAB (Rencana Anggaran Biaya) adalah dokumen estimasi biaya konstruksi. Di SIVILIZE, lo bisa generate RAB otomatis di menu Kalkulator RAB bro!',
