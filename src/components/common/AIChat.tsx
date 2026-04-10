@@ -57,7 +57,7 @@ const callGemini = async (messages: Message[], userInput: string): Promise<strin
 };
 
 const AIChat = () => {
-  useStore();
+  useStore(); // keep store subscription
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
