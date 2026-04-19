@@ -131,7 +131,7 @@ const RABCalculator = () => {
   const [tempProjectId] = useState(() => `temp_${Date.now()}`);
   const [aiMode, setAiMode] = useState(false);
   const [aiProgress, setAiProgress] = useState(0);
-  const [activeSubTab, setActiveSubTab] = useState<'rab' | 'materials' | 'timeline'>('rab');
+  const [activeSubTab, setActiveSubTab] = useState<'rab' | 'materials' | 'timeline' | 'template'>('rab');
   const [selectedProvince, setSelectedProvince] = useState(DEFAULT_PROVINCE_ID);
   const [materialGrade, setMaterialGrade] = useState<MaterialGrade>(DEFAULT_MATERIAL_GRADE);
   const [locationType, setLocationType] = useState<LocationType>('kota');

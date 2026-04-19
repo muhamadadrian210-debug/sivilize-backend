@@ -13,6 +13,7 @@ import PrivacyPolicy from './components/legal/PrivacyPolicy';
 import TermsOfService from './components/legal/TermsOfService';
 import AboutUs from './components/legal/AboutUs';
 import Contact from './components/legal/Contact';
+import NotificationPanel from './components/common/NotificationPanel';
 import { useStore } from './store/useStore';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ToastProvider } from './components/common/Toast';
@@ -60,17 +61,7 @@ function App() {
       case 'admin':
         return <AdminDashboard />;
       case 'notifikasi':
-        return (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
-            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center text-primary animate-bounce">
-              <span className="text-3xl font-bold">!</span>
-            </div>
-            <h2 className="text-2xl font-bold text-white">Belum Ada Notifikasi</h2>
-            <p className="text-text-secondary max-w-md">
-              Anda akan menerima pembaruan di sini saat ada aktivitas baru pada proyek atau sistem.
-            </p>
-          </div>
-        );
+        return <NotificationPanel />;
       default:
         return <Dashboard />;
     }

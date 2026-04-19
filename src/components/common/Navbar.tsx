@@ -8,7 +8,8 @@ import {
 import { useStore } from '../../store/useStore';
 
 const Navbar = () => {
-  const { setActiveTab } = useStore();
+  const { setActiveTab, notifications } = useStore();
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <header className="h-20 bg-card/80 backdrop-blur-md border-b border-border fixed top-0 left-64 right-0 z-40 px-8 flex items-center justify-between">
@@ -38,7 +39,11 @@ const Navbar = () => {
             className="hover:text-white transition-colors p-2 rounded-lg hover:bg-border relative"
           >
             <Bell size={20} />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full shadow-glow animate-pulse" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-primary rounded-full text-white text-[10px] font-black flex items-center justify-center shadow-glow px-1">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
           </button>
           <button 
             onClick={() => setActiveTab('manajemen')}

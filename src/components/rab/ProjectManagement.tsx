@@ -1,19 +1,24 @@
 import { useEffect, useState } from 'react';
 import { 
   Folder, Search, Filter, Plus, Clock, TrendingUp, Copy,
-  Trash2, History, Eye, BarChart3, X, CheckCircle2
+  Trash2, History, Eye, BarChart3, X, CheckCircle2,
+  Activity, Users, DollarSign
 } from 'lucide-react';
 import { useStore, type Project } from '../../store/useStore';
 import { formatCurrency } from '../../utils/calculations';
 import { projectService } from '../../services/api';
 import { getCityDisplayName } from '../../data/prices';
 import { useToast } from '../common/Toast';
+import KurvaS from './KurvaS';
+import LaborCalculator from './LaborCalculator';
+import CostRealizationTracker from './CostRealizationTracker';
 
 const ProjectManagement = () => {
   const { projects, setProjects, setActiveTab, addProject, deleteProject } = useStore();
   const { showToast } = useToast();
   const [searchText, setSearchText] = useState('');
   const [viewProject, setViewProject] = useState<Project | null>(null);
+  const [detailTab, setDetailTab] = useState<'info' | 'kurvas' | 'upah' | 'realisasi'>('info');
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -267,63 +272,79 @@ const ProjectManagement = () => {
         </div>
       )}
 
-      {/* View Project Modal */}
+      {/* View Project Modal — Full Detail */}
       {viewProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setViewProject(null)} />
-          <div className="relative glass-card w-full max-w-lg p-6 space-y-5">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-white">{viewProject.name}</h3>
-              <button onClick={() => setViewProject(null)} className="text-text-secondary hover:text-white"><X size={20} /></button>
+          <div className="relative glass-card w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-border shrink-0">
+              <div>
+                <h3 className="text-xl font-bold text-white">{viewProject.name}</h3>
+                <p className="text-text-secondary text-sm">{getCityDisplayName(viewProject.location)}</p>
+              </div>
+              <button onClick={() => setViewProject(null)} className="text-text-secondary hover:text-white p-2"><X size={20} /></button>
             </div>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="space-y-1">
-                <p className="text-text-secondary text-xs uppercase font-bold tracking-widest">Lokasi</p>
-                <p className="text-white">{getCityDisplayName(viewProject.location)}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-text-secondary text-xs uppercase font-bold tracking-widest">Status</p>
-                <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
-                  viewProject.status === 'completed' ? 'bg-success/10 text-success' :
-                  viewProject.status === 'ongoing' ? 'bg-primary/10 text-primary' :
-                  'bg-border text-text-secondary'}`}>{viewProject.status}</span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-text-secondary text-xs uppercase font-bold tracking-widest">Lantai</p>
-                <p className="text-white">{viewProject.floors}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-text-secondary text-xs uppercase font-bold tracking-widest">Versi RAB</p>
-                <p className="text-white">{viewProject.versions?.length || 0} versi</p>
-              </div>
-              {viewProject.bedroomCount !== undefined && (
-                <div className="space-y-1">
-                  <p className="text-text-secondary text-xs uppercase font-bold tracking-widest">Kamar Tidur</p>
-                  <p className="text-white">{viewProject.bedroomCount}</p>
+
+            {/* Tabs */}
+            <div className="flex gap-1 px-6 pt-4 shrink-0">
+              {[
+                { id: 'info', label: 'Info', icon: <Folder size={14} /> },
+                { id: 'kurvas', label: 'Kurva S', icon: <Activity size={14} /> },
+                { id: 'upah', label: 'Upah TK', icon: <Users size={14} /> },
+                { id: 'realisasi', label: 'Realisasi', icon: <DollarSign size={14} /> },
+              ].map(tab => (
+                <button key={tab.id} onClick={() => setDetailTab(tab.id as typeof detailTab)}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                    detailTab === tab.id ? 'bg-primary text-white' : 'text-text-secondary hover:text-white'
+                  }`}>
+                  {tab.icon} {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {detailTab === 'info' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    {[
+                      { label: 'Status', value: viewProject.status },
+                      { label: 'Lantai', value: viewProject.floors },
+                      { label: 'Versi RAB', value: `${viewProject.versions?.length || 0} versi` },
+                      { label: 'Kamar Tidur', value: viewProject.bedroomCount ?? '-' },
+                      { label: 'Kamar Mandi', value: viewProject.bathroomCount ?? '-' },
+                      { label: 'Jenis Tanah', value: viewProject.soilType ?? '-' },
+                      { label: 'Pondasi', value: viewProject.foundationType ?? '-' },
+                      { label: 'Tipe Lokasi', value: viewProject.locationType ?? '-' },
+                    ].map((item, i) => (
+                      <div key={i} className="space-y-1">
+                        <p className="text-text-secondary text-xs uppercase font-bold tracking-widest">{item.label}</p>
+                        <p className="text-white capitalize">{String(item.value)}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {viewProject.versions?.length > 0 && (
+                    <div className="border-t border-border pt-4">
+                      <p className="text-text-secondary text-xs uppercase font-bold tracking-widest mb-2">Total RAB</p>
+                      <p className="text-3xl font-black text-primary">
+                        {formatCurrency(viewProject.versions[viewProject.versions.length - 1]?.summary?.grandTotal || 0)}
+                      </p>
+                    </div>
+                  )}
+                  <div className="flex gap-3 pt-2">
+                    <button onClick={() => { handleDuplicate(viewProject); setViewProject(null); }} className="btn-secondary flex-1 flex items-center justify-center gap-2">
+                      <Copy size={16} /> Duplikat
+                    </button>
+                    <button onClick={() => setViewProject(null)} className="btn-primary flex-1 flex items-center justify-center gap-2">
+                      <CheckCircle2 size={16} /> Tutup
+                    </button>
+                  </div>
                 </div>
               )}
-              {viewProject.bathroomCount !== undefined && (
-                <div className="space-y-1">
-                  <p className="text-text-secondary text-xs uppercase font-bold tracking-widest">Kamar Mandi</p>
-                  <p className="text-white">{viewProject.bathroomCount}</p>
-                </div>
-              )}
-            </div>
-            {viewProject.versions?.length > 0 && (
-              <div className="border-t border-border pt-4">
-                <p className="text-text-secondary text-xs uppercase font-bold tracking-widest mb-3">Total RAB</p>
-                <p className="text-2xl font-black text-primary">
-                  {formatCurrency(viewProject.versions[viewProject.versions.length - 1]?.summary?.grandTotal || 0)}
-                </p>
-              </div>
-            )}
-            <div className="flex gap-3 pt-2">
-              <button onClick={() => { handleDuplicate(viewProject); setViewProject(null); }} className="btn-secondary flex-1 flex items-center justify-center gap-2">
-                <Copy size={16} /> Duplikat
-              </button>
-              <button onClick={() => setViewProject(null)} className="btn-primary flex-1 flex items-center justify-center gap-2">
-                <CheckCircle2 size={16} /> Tutup
-              </button>
+              {detailTab === 'kurvas' && <KurvaS project={viewProject} />}
+              {detailTab === 'upah' && <LaborCalculator projectId={viewProject.id} />}
+              {detailTab === 'realisasi' && <CostRealizationTracker projectId={viewProject.id} />}
             </div>
           </div>
         </div>

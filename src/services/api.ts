@@ -1,8 +1,8 @@
 import axios from 'axios';
 import type { Project, User } from '../store/useStore';
 
-// Backend API URL - Using Vercel deployment
-const API_URL = 'https://server-1rimpvmey-muhamadadrian210-2602s-projects.vercel.app/api';
+// Backend API URL - baca dari env variable, fallback ke URL production
+const API_URL = import.meta.env.VITE_API_URL || 'https://server-1rimpvmey-muhamadadrian210-2602s-projects.vercel.app/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -70,6 +70,21 @@ export const authService = {
   },
   getMe: async () => {
     const response = await api.get<ApiResponse<User>>('/auth/me');
+    return response.data;
+  },
+  updateProfile: async (data: { name?: string; email?: string; currentPassword?: string; newPassword?: string }) => {
+    const response = await api.put<ApiResponse<User>>('/auth/profile', data);
+    return response.data;
+  },
+  forgotPassword: async (email: string) => {
+    const response = await api.post<ApiResponse<{ resetToken?: string; resetUrl?: string }>>('/auth/forgot-password', { email });
+    return response.data;
+  },
+  resetPassword: async (token: string, newPassword: string) => {
+    const response = await api.post<ApiResponse<User>>('/auth/reset-password', { token, newPassword });
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+    }
     return response.data;
   },
 };

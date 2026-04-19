@@ -1,4 +1,4 @@
-﻿export interface CityPrices {
+﻿﻿export interface CityPrices {
   id: string;
   name: string;
   provinceId: string;

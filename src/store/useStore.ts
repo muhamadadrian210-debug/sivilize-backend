@@ -3,7 +3,6 @@ import { persist } from 'zustand/middleware';
 
 export type UserRole = 'admin' | 'estimator' | 'owner' | 'user' | 'client';
 
-// RBAC permissions map
 export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   admin:     ['read', 'write', 'delete', 'manage_users', 'export', 'audit'],
   estimator: ['read', 'write', 'export'],
@@ -36,6 +35,49 @@ export interface ActivityLog {
   description: string;
 }
 
+// Notifikasi in-app
+export interface AppNotification {
+  id: string;
+  timestamp: number;
+  type: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+  message: string;
+  read: boolean;
+  projectId?: string;
+}
+
+// Template RAB yang bisa disimpan & dipakai ulang
+export interface RABTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: string; // misal "Rumah Type 36", "Ruko 2 Lantai"
+  createdAt: number;
+  rabItems: RABItem[];
+  financialSettings: FinancialSettings;
+}
+
+// Realisasi biaya untuk tracking cashflow
+export interface CostRealization {
+  id: string;
+  date: string;
+  category: string;
+  description: string;
+  amount: number;
+  receipt?: string; // base64 foto nota
+}
+
+// Upah tenaga kerja mingguan
+export interface LaborPayment {
+  id: string;
+  weekStart: string;
+  weekEnd: string;
+  workers: { name: string; role: string; days: number; dailyWage: number; total: number }[];
+  totalAmount: number;
+  paid: boolean;
+  paidDate?: string;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -48,6 +90,8 @@ export interface Project {
   versions: ProjectVersion[];
   dailyLogs: DailyLog[];
   status: 'draft' | 'ongoing' | 'completed';
+  startDate?: string;
+  endDate?: string;
   bedroomCount?: number;
   bathroomCount?: number;
   doorCount?: number;
@@ -58,12 +102,14 @@ export interface Project {
   lightPointCount?: number;
   socketPointCount?: number;
   toiletType?: 'duduk' | 'jongkok';
-  // Jenis tanah & pondasi
   soilType?: 'keras' | 'sedang' | 'lunak' | 'gambut' | 'pasir' | 'berbatu';
   foundationType?: 'batu-kali' | 'footplate' | 'tiang-pancang' | 'strauss-pile' | 'raft' | 'sumuran';
-  // Tipe lokasi untuk multiplier ongkos angkut
   locationType?: 'kota' | 'pinggiran' | 'pelosok' | 'sangat-terpencil';
-  // Auto-save draft
+  // Realisasi biaya
+  costRealizations?: CostRealization[];
+  // Pembayaran upah
+  laborPayments?: LaborPayment[];
+  // Auto-save
   autoSaveDraft?: Partial<ProjectVersion>;
   autoSavedAt?: number;
 }
@@ -72,6 +118,7 @@ export interface ProjectVersion {
   id: string;
   versionNum: number;
   timestamp: number;
+  label?: string; // misal "Revisi 1 - Tambah Carport"
   rabItems: RABItem[];
   financialSettings: FinancialSettings;
   summary?: {
@@ -94,8 +141,11 @@ export interface RABItem {
   total: number;
   analysis?: AHSPAnalysis;
   assignedTeam?: { [key: string]: number };
-  // AHSP validation
   ahspWarning?: string;
+  // Progress realisasi (0-100%)
+  progressPercent?: number;
+  // Bobot pekerjaan untuk Kurva S
+  weight?: number;
 }
 
 export interface AHSPAnalysis {
@@ -115,6 +165,8 @@ export interface DailyLog {
   date: string;
   text: string;
   photos: string[];
+  status?: 'Normal' | 'Warning' | 'Kendala';
+  progressPercent?: number; // progress keseluruhan hari itu
 }
 
 interface AppState {
@@ -126,6 +178,8 @@ interface AppState {
   user: User | null;
   isAuthenticated: boolean;
   activityLogs: ActivityLog[];
+  notifications: AppNotification[];
+  rabTemplates: RABTemplate[];
 
   // Actions
   setProjects: (projects: Project[]) => void;
@@ -144,6 +198,19 @@ interface AppState {
   // Auto-save
   saveAutoSaveDraft: (projectId: string, draft: Partial<ProjectVersion>) => void;
   clearAutoSaveDraft: (projectId: string) => void;
+  // Notifications
+  addNotification: (notif: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => void;
+  markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: () => void;
+  clearNotifications: () => void;
+  // Templates
+  saveRABTemplate: (template: Omit<RABTemplate, 'id' | 'createdAt'>) => void;
+  deleteRABTemplate: (id: string) => void;
+  // Cost realization
+  addCostRealization: (projectId: string, cost: Omit<CostRealization, 'id'>) => void;
+  // Labor payment
+  addLaborPayment: (projectId: string, payment: Omit<LaborPayment, 'id'>) => void;
+  updateLaborPayment: (projectId: string, paymentId: string, updates: Partial<LaborPayment>) => void;
 }
 
 export const useStore = create<AppState>()(
@@ -157,6 +224,8 @@ export const useStore = create<AppState>()(
       user: null,
       isAuthenticated: false,
       activityLogs: [],
+      notifications: [],
+      rabTemplates: [],
 
       setProjects: (projects) => set({ projects }),
       setActiveProject: (id) => set({ activeProjectId: id }),
@@ -171,12 +240,16 @@ export const useStore = create<AppState>()(
         get().addActivityLog({
           userId: user?.id || 'unknown',
           userName: user?.name || 'Unknown',
-          action: 'create',
-          entity: 'project',
-          entityId: project.id,
-          entityName: project.name,
+          action: 'create', entity: 'project',
+          entityId: project.id, entityName: project.name,
           newValue: { name: project.name, location: project.location },
           description: `Membuat proyek baru: ${project.name}`,
+        });
+        get().addNotification({
+          type: 'success',
+          title: 'Proyek Dibuat',
+          message: `Proyek "${project.name}" berhasil disimpan.`,
+          projectId: project.id,
         });
       },
 
@@ -188,11 +261,8 @@ export const useStore = create<AppState>()(
         const { user } = get();
         if (oldProject && updates.name !== undefined) {
           get().addActivityLog({
-            userId: user?.id || 'unknown',
-            userName: user?.name || 'Unknown',
-            action: 'update',
-            entity: 'project',
-            entityId: id,
+            userId: user?.id || 'unknown', userName: user?.name || 'Unknown',
+            action: 'update', entity: 'project', entityId: id,
             entityName: updates.name || oldProject.name,
             oldValue: { name: oldProject.name, status: oldProject.status },
             newValue: { name: updates.name, status: updates.status },
@@ -207,13 +277,9 @@ export const useStore = create<AppState>()(
         const { user } = get();
         if (project) {
           get().addActivityLog({
-            userId: user?.id || 'unknown',
-            userName: user?.name || 'Unknown',
-            action: 'delete',
-            entity: 'project',
-            entityId: id,
-            entityName: project.name,
-            oldValue: { name: project.name },
+            userId: user?.id || 'unknown', userName: user?.name || 'Unknown',
+            action: 'delete', entity: 'project', entityId: id,
+            entityName: project.name, oldValue: { name: project.name },
             description: `Menghapus proyek: ${project.name}`,
           });
         }
@@ -222,12 +288,9 @@ export const useStore = create<AppState>()(
       logout: () => {
         const { user } = get();
         get().addActivityLog({
-          userId: user?.id || 'unknown',
-          userName: user?.name || 'Unknown',
-          action: 'logout',
-          entity: 'user',
-          entityId: user?.id || 'unknown',
-          entityName: user?.name || 'Unknown',
+          userId: user?.id || 'unknown', userName: user?.name || 'Unknown',
+          action: 'logout', entity: 'user',
+          entityId: user?.id || 'unknown', entityName: user?.name || 'Unknown',
           description: `User logout: ${user?.name}`,
         });
         localStorage.removeItem('token');
@@ -242,7 +305,6 @@ export const useStore = create<AppState>()(
           timestamp: Date.now(),
         };
         set((state) => ({
-          // Keep max 500 logs
           activityLogs: [newLog, ...state.activityLogs].slice(0, 500),
         }));
       },
@@ -252,9 +314,7 @@ export const useStore = create<AppState>()(
       saveAutoSaveDraft: (projectId, draft) => {
         set((state) => ({
           projects: state.projects.map(p =>
-            p.id === projectId
-              ? { ...p, autoSaveDraft: draft, autoSavedAt: Date.now() }
-              : p
+            p.id === projectId ? { ...p, autoSaveDraft: draft, autoSavedAt: Date.now() } : p
           ),
         }));
       },
@@ -262,15 +322,102 @@ export const useStore = create<AppState>()(
       clearAutoSaveDraft: (projectId) => {
         set((state) => ({
           projects: state.projects.map(p =>
+            p.id === projectId ? { ...p, autoSaveDraft: undefined, autoSavedAt: undefined } : p
+          ),
+        }));
+      },
+
+      addNotification: (notif) => {
+        const newNotif: AppNotification = {
+          ...notif,
+          id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+          timestamp: Date.now(),
+          read: false,
+        };
+        set((state) => ({
+          notifications: [newNotif, ...state.notifications].slice(0, 100),
+        }));
+      },
+
+      markNotificationRead: (id) => {
+        set((state) => ({
+          notifications: state.notifications.map(n => n.id === id ? { ...n, read: true } : n),
+        }));
+      },
+
+      markAllNotificationsRead: () => {
+        set((state) => ({
+          notifications: state.notifications.map(n => ({ ...n, read: true })),
+        }));
+      },
+
+      clearNotifications: () => set({ notifications: [] }),
+
+      saveRABTemplate: (template) => {
+        const newTemplate: RABTemplate = {
+          ...template,
+          id: `tpl_${Date.now()}`,
+          createdAt: Date.now(),
+        };
+        set((state) => ({
+          rabTemplates: [newTemplate, ...state.rabTemplates],
+        }));
+        get().addNotification({
+          type: 'success',
+          title: 'Template Disimpan',
+          message: `Template "${template.name}" berhasil disimpan.`,
+        });
+      },
+
+      deleteRABTemplate: (id) => {
+        set((state) => ({
+          rabTemplates: state.rabTemplates.filter(t => t.id !== id),
+        }));
+      },
+
+      addCostRealization: (projectId, cost) => {
+        const newCost: CostRealization = {
+          ...cost,
+          id: `cost_${Date.now()}`,
+        };
+        set((state) => ({
+          projects: state.projects.map(p =>
             p.id === projectId
-              ? { ...p, autoSaveDraft: undefined, autoSavedAt: undefined }
+              ? { ...p, costRealizations: [...(p.costRealizations || []), newCost] }
+              : p
+          ),
+        }));
+      },
+
+      addLaborPayment: (projectId, payment) => {
+        const newPayment: LaborPayment = {
+          ...payment,
+          id: `labor_${Date.now()}`,
+        };
+        set((state) => ({
+          projects: state.projects.map(p =>
+            p.id === projectId
+              ? { ...p, laborPayments: [...(p.laborPayments || []), newPayment] }
+              : p
+          ),
+        }));
+      },
+
+      updateLaborPayment: (projectId, paymentId, updates) => {
+        set((state) => ({
+          projects: state.projects.map(p =>
+            p.id === projectId
+              ? {
+                  ...p,
+                  laborPayments: (p.laborPayments || []).map(lp =>
+                    lp.id === paymentId ? { ...lp, ...updates } : lp
+                  ),
+                }
               : p
           ),
         }));
       },
     }),
-    {
-      name: 'sivilize-hub-pro-storage',
-    }
+    { name: 'sivilize-hub-pro-storage' }
   )
 );
