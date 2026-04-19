@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Sidebar from './components/common/Sidebar';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
@@ -22,9 +22,13 @@ import AIChat from './components/common/AIChat';
 import AdminDashboard from './components/admin/AdminDashboard';
 import { checkTokenValidity } from './utils/security';
 import PrankPage from './pages/PrankPage';
+import LandingPage from './pages/LandingPage';
+import { useDataSync } from './hooks/useDataSync';
 
 function App() {
   const { activeTab, isAuthenticated, setAuthenticated } = useStore();
+  const [showAuth, setShowAuth] = useState(false);
+  useDataSync(); // Sinkronisasi data proyek dengan server
 
   // Tampilkan halaman prank jika URL /prank
   if (window.location.pathname === '/prank') {
@@ -63,7 +67,10 @@ function App() {
   }, [isAuthenticated, setAuthenticated]);
 
   if (!isAuthenticated) {
-    return <ToastProvider><AuthPage /></ToastProvider>;
+    if (showAuth) {
+      return <ToastProvider><AuthPage /></ToastProvider>;
+    }
+    return <LandingPage onGetStarted={() => setShowAuth(true)} />;
   }
 
   const renderContent = () => {
