@@ -20,6 +20,20 @@ exports.loginBruteForce = (req, res, next) => {
       loginAttempts.delete(ip);
     } else if (record.count >= MAX_LOGIN_ATTEMPTS) {
       const waitMinutes = Math.ceil((record.firstAttempt + LOGIN_LOCKOUT_MS - now) / 60000);
+
+      // Kirim alert ke admin
+      try {
+        const { sendSecurityAlert } = require('../utils/alertService');
+        sendSecurityAlert('brute_force', {
+          ip,
+          endpoint: req.path,
+          method: req.method,
+          userAgent: req.headers['user-agent'],
+          email: req.body?.email,
+          attempts: record.count,
+        });
+      } catch {}
+
       return res.status(429).json({
         success: false,
         message: `Terlalu banyak percobaan login. Coba lagi dalam ${waitMinutes} menit.`
@@ -32,12 +46,27 @@ exports.loginBruteForce = (req, res, next) => {
   res.json = (body) => {
     if (res.statusCode === 401 && req.path.includes('login')) {
       const current = loginAttempts.get(ip) || { count: 0, firstAttempt: now };
+      const newCount = current.count + 1;
       loginAttempts.set(ip, {
-        count: current.count + 1,
+        count: newCount,
         firstAttempt: current.count === 0 ? now : current.firstAttempt
       });
+
+      // Alert setelah 3x gagal
+      if (newCount === 3) {
+        try {
+          const { sendSecurityAlert } = require('../utils/alertService');
+          sendSecurityAlert('brute_force', {
+            ip,
+            endpoint: req.path,
+            method: req.method,
+            userAgent: req.headers['user-agent'],
+            email: req.body?.email,
+            attempts: newCount,
+          });
+        } catch {}
+      }
     } else if (res.statusCode === 200 && req.path.includes('login')) {
-      // Login berhasil — reset counter
       loginAttempts.delete(ip);
     }
     return originalJson(body);

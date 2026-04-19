@@ -249,6 +249,36 @@ try {
   // Route belum ada, skip
 }
 
+// ============================================================
+// 11. HONEYPOT ENDPOINTS — jebak hacker yang coba scan
+// ============================================================
+const HONEYPOT_PATHS = [
+  '/admin', '/wp-admin', '/wp-login.php', '/phpmyadmin',
+  '/config', '/.env', '/backup', '/db', '/database',
+  '/shell', '/cmd', '/exec', '/api/admin/users',
+];
+
+HONEYPOT_PATHS.forEach(path => {
+  app.all(path, (req, res) => {
+    const ip = req.ip || 'unknown';
+    console.warn(`🍯 HONEYPOT HIT: ${req.method} ${path} from ${ip}`);
+
+    // Kirim alert ke admin
+    try {
+      const { sendSecurityAlert } = require('./utils/alertService');
+      sendSecurityAlert('honeypot', {
+        ip,
+        endpoint: path,
+        method: req.method,
+        userAgent: req.headers['user-agent'],
+      });
+    } catch {}
+
+    // Redirect ke halaman prank
+    res.redirect(301, `${process.env.FRONTEND_URL || 'https://sivilize-frontend.vercel.app'}/prank`);
+  });
+});
+
 // Root
 app.get('/', (req, res) => {
   res.json({
