@@ -366,3 +366,72 @@ exports.resetPassword = async (req, res, next) => {
     next(err);
   }
 };
+
+// ── Upload Avatar ────────────────────────────────────────────
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Pastikan direktori uploads/avatars ada
+const avatarDir = path.join(__dirname, '../uploads/avatars');
+if (!fs.existsSync(avatarDir)) {
+  fs.mkdirSync(avatarDir, { recursive: true });
+}
+
+const avatarStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, avatarDir);
+  },
+  filename: (req, file, cb) => {
+    const userId = req.user._id || req.user.id;
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+    cb(null, `user_${userId}_${Date.now()}${ext}`);
+  },
+});
+
+const avatarUpload = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Tipe file tidak valid. Hanya JPEG, PNG, WebP yang diizinkan.'));
+    }
+  },
+});
+
+// @desc    Upload avatar
+// @route   POST /api/auth/avatar
+// @access  Private
+exports.uploadAvatar = [
+  avatarUpload.single('avatar'),
+  async (req, res, next) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'File avatar diperlukan' });
+      }
+
+      const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+      const userId = req.user._id || req.user.id;
+      const UserModel = getStorage();
+
+      if (UserModel) {
+        await UserModel.findByIdAndUpdate(userId, { avatarUrl });
+      } else {
+        mockStorage.update('users', userId, { avatarUrl });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: { avatarUrl },
+      });
+    } catch (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ success: false, message: 'Ukuran file maksimal 2MB' });
+      }
+      next(err);
+    }
+  },
+];

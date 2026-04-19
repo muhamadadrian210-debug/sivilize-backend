@@ -35,6 +35,12 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // ============================================================
+// 2b. STATIC FILES — serve uploaded avatars
+// ============================================================
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// ============================================================
 // 3. NOSQL INJECTION PROTECTION
 // ============================================================
 app.use(mongoSanitize({
@@ -241,13 +247,7 @@ app.use('/api/materials', require('./routes/materials'));
 app.use('/api/logs', require('./routes/logs'));
 app.use('/api/calculate-rab', require('./routes/calculation'));
 app.use('/api/export', exportLimiter, require('./routes/export'));
-
-// Share RAB route (public, no auth required)
-try {
-  app.use('/api/share', require('./routes/share'));
-} catch (e) {
-  // Route belum ada, skip
-}
+app.use('/api/share', require('./routes/share'));
 
 // ============================================================
 // 11. HONEYPOT ENDPOINTS — jebak hacker yang coba scan
