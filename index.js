@@ -122,6 +122,22 @@ app.use((req, res, next) => {
 });
 
 // ============================================================
+// 6c. SECURITY MIDDLEWARE TAMBAHAN
+// ============================================================
+const {
+  requestSizeLimiter,
+  injectionDetector,
+  securityHeaders,
+  validateTokenFormat,
+  loginBruteForce,
+} = require('./middleware/security');
+
+app.use(securityHeaders);
+app.use(requestSizeLimiter);
+app.use(injectionDetector);
+app.use(validateTokenFormat);
+
+// ============================================================
 // 7. REQUEST ID - Tracking setiap request
 // ============================================================
 app.use((req, res, next) => {
@@ -217,7 +233,8 @@ app.use(async (req, res, next) => {
 // ============================================================
 // 10. ROUTES - Auth pakai rate limiter ketat
 // ============================================================
-app.use('/api/auth', authLimiter, require('./routes/auth'));
+const { loginBruteForce: bruteForce } = require('./middleware/security');
+app.use('/api/auth', authLimiter, bruteForce, require('./routes/auth'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/ahsp', require('./routes/ahsp'));
 app.use('/api/materials', require('./routes/materials'));
