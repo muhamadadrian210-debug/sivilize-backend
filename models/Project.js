@@ -83,6 +83,20 @@ const ProjectSchema = new mongoose.Schema({
     default: 'draft',
   },
   versions: [VersionSchema],
+  // Share RAB fields
+  shareToken: {
+    type: String,
+    default: null,
+    index: true,
+  },
+  shareTokenExpiry: {
+    type: Date,
+    default: null,
+  },
+  shareEnabled: {
+    type: Boolean,
+    default: false,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

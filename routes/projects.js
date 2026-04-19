@@ -8,6 +8,7 @@ const {
   addProjectVersion,
 } = require('../controllers/projects');
 const { protect } = require('../middleware/auth');
+const { generateShareLink } = require('./share');
 
 const router = express.Router();
 
@@ -24,5 +25,8 @@ router.route('/:id')
 
 router.route('/:id/versions')
   .post(addProjectVersion);
+
+router.route('/:id/share')
+  .post(generateShareLink);
 
 module.exports = router;

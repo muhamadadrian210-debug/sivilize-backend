@@ -58,33 +58,26 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, etc.)
+    // Allow requests with no origin (mobile apps, Postman, curl, etc.)
     if (!origin) return callback(null, true);
     // Allow all Vercel origins (any .vercel.app domain)
-    if (origin && origin.includes('vercel.app')) {
-      return callback(null, true);
-    }
-    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
+    if (origin.includes('vercel.app')) return callback(null, true);
+    // Allow localhost for development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) return callback(null, true);
+    // Allow explicitly listed origins
+    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) return callback(null, true);
+    // Log blocked origin for debugging
+    console.warn(`⚠️ CORS blocked origin: ${origin}`);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: false,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
-// Handle preflight untuk semua route
-app.use((req, res, next) => {
-  if (req.method === 'OPTIONS') {
-    res.header('Access-Control-Allow-Origin', res.getHeader('Access-Control-Allow-Origin') || '*');
-    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-    return res.sendStatus(200);
-  }
-  next();
-});
+// Handle preflight untuk semua route — pastikan selalu return 200
+app.options('*', cors(corsOptions));
 
 // ============================================================
 // 6. RATE LIMITING - Berbeda per endpoint
@@ -119,17 +112,11 @@ const exportLimiter = rateLimit({
 });
 
 // ============================================================
-// 6b. ANTI-SCRAPING - User-Agent & Fingerprint check
+// 6b. REQUEST LOGGING - Log semua request untuk debugging
 // ============================================================
 app.use((req, res, next) => {
-  const ua = req.headers['user-agent'] || '';
-  const suspiciousAgents = ['python-requests', 'curl/', 'wget/', 'scrapy', 'bot', 'spider', 'crawl'];
-  
-  // Block obvious scrapers pada endpoint sensitif
-  if (req.path.startsWith('/api/projects') || req.path.startsWith('/api/export')) {
-    if (suspiciousAgents.some(s => ua.toLowerCase().includes(s))) {
-      return res.status(403).json({ success: false, message: 'Akses ditolak.' });
-    }
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`${req.method} ${req.path} - ${req.ip}`);
   }
   next();
 });
@@ -237,6 +224,13 @@ app.use('/api/materials', require('./routes/materials'));
 app.use('/api/logs', require('./routes/logs'));
 app.use('/api/calculate-rab', require('./routes/calculation'));
 app.use('/api/export', exportLimiter, require('./routes/export'));
+
+// Share RAB route (public, no auth required)
+try {
+  app.use('/api/share', require('./routes/share'));
+} catch (e) {
+  // Route belum ada, skip
+}
 
 // Root
 app.get('/', (req, res) => {
