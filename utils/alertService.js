@@ -7,19 +7,46 @@ const ALERT_COOLDOWN = new Map(); // Cegah spam alert
 const COOLDOWN_MS = 5 * 60 * 1000; // 5 menit per IP
 
 /**
+ * Lookup informasi IP (negara, kota, ISP)
+ */
+async function lookupIP(ip) {
+  try {
+    // Skip private/local IPs
+    if (!ip || ip === 'unknown' || ip.startsWith('10.') || ip.startsWith('192.168.') || ip.startsWith('127.') || ip === '::1') {
+      return { country: 'Local/Private', city: '-', isp: '-', org: '-' };
+    }
+    const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,city,isp,org,lat,lon,regionName`);
+    const data = await response.json();
+    if (data.status === 'success') {
+      return {
+        country: data.country || '-',
+        city: data.city || '-',
+        region: data.regionName || '-',
+        isp: data.isp || '-',
+        org: data.org || '-',
+        lat: data.lat,
+        lon: data.lon,
+      };
+    }
+  } catch {}
+  return { country: 'Unknown', city: '-', isp: '-', org: '-' };
+}
+
+/**
  * Kirim alert ke admin
- * @param {string} type - Jenis alert: 'brute_force' | 'honeypot' | 'injection'
- * @param {object} details - Detail kejadian
  */
 async function sendSecurityAlert(type, details) {
   const adminEmail = process.env.ADMIN_ALERT_EMAIL;
-  if (!adminEmail) return; // Tidak dikonfigurasi, skip
+  if (!adminEmail) return;
 
-  // Cegah spam — max 1 alert per IP per 5 menit
+  // Cegah spam
   const cooldownKey = `${type}_${details.ip}`;
   if (ALERT_COOLDOWN.has(cooldownKey)) return;
   ALERT_COOLDOWN.set(cooldownKey, true);
   setTimeout(() => ALERT_COOLDOWN.delete(cooldownKey), COOLDOWN_MS);
+
+  // Lookup IP info
+  const ipInfo = await lookupIP(details.ip);
 
   const typeLabels = {
     brute_force: '🔴 PERCOBAAN BRUTE FORCE LOGIN',
@@ -29,6 +56,12 @@ async function sendSecurityAlert(type, details) {
   };
 
   const subject = `[SIVILIZE SECURITY] ${typeLabels[type] || type}`;
+
+  // Google Maps link jika ada koordinat
+  const mapsLink = ipInfo.lat && ipInfo.lon
+    ? `https://www.google.com/maps?q=${ipInfo.lat},${ipInfo.lon}`
+    : null;
+
   const html = `
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0a0a0f;color:#fff;padding:32px;border-radius:12px;">
       <h2 style="color:#FF7A00;margin:0 0 16px;">⚠️ Security Alert</h2>
@@ -37,26 +70,47 @@ async function sendSecurityAlert(type, details) {
       <div style="background:#121826;border:1px solid #1e293b;border-radius:8px;padding:16px;margin-bottom:16px;">
         <p style="margin:0 0 8px;color:#64748b;font-size:12px;text-transform:uppercase;">DETAIL KEJADIAN</p>
         <table style="width:100%;border-collapse:collapse;">
-          <tr><td style="color:#94a3b8;padding:4px 0;width:120px;">Tipe</td><td style="color:#f97316;font-weight:bold;">${typeLabels[type] || type}</td></tr>
-          <tr><td style="color:#94a3b8;padding:4px 0;">IP Address</td><td style="color:#fff;font-family:monospace;">${details.ip || 'Unknown'}</td></tr>
+          <tr><td style="color:#94a3b8;padding:4px 0;width:140px;">Tipe Serangan</td><td style="color:#f97316;font-weight:bold;">${typeLabels[type] || type}</td></tr>
+          <tr><td style="color:#94a3b8;padding:4px 0;">IP Address</td><td style="color:#fff;font-family:monospace;font-weight:bold;">${details.ip || 'Unknown'}</td></tr>
           <tr><td style="color:#94a3b8;padding:4px 0;">Waktu</td><td style="color:#fff;">${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB</td></tr>
           <tr><td style="color:#94a3b8;padding:4px 0;">Endpoint</td><td style="color:#fff;font-family:monospace;">${details.endpoint || '-'}</td></tr>
           <tr><td style="color:#94a3b8;padding:4px 0;">Method</td><td style="color:#fff;">${details.method || '-'}</td></tr>
-          <tr><td style="color:#94a3b8;padding:4px 0;">User Agent</td><td style="color:#fff;font-size:12px;">${(details.userAgent || '-').substring(0, 100)}</td></tr>
-          ${details.email ? `<tr><td style="color:#94a3b8;padding:4px 0;">Email</td><td style="color:#fff;">${details.email}</td></tr>` : ''}
+          ${details.email ? `<tr><td style="color:#94a3b8;padding:4px 0;">Email Target</td><td style="color:#fff;">${details.email}</td></tr>` : ''}
           ${details.attempts ? `<tr><td style="color:#94a3b8;padding:4px 0;">Percobaan</td><td style="color:#f97316;font-weight:bold;">${details.attempts}x</td></tr>` : ''}
         </table>
+      </div>
+
+      <div style="background:#0f172a;border:1px solid #f97316;border-radius:8px;padding:16px;margin-bottom:16px;">
+        <p style="margin:0 0 8px;color:#f97316;font-size:12px;text-transform:uppercase;font-weight:bold;">📍 LOKASI PENYERANG</p>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr><td style="color:#94a3b8;padding:4px 0;width:140px;">Negara</td><td style="color:#fff;font-weight:bold;">${ipInfo.country}</td></tr>
+          <tr><td style="color:#94a3b8;padding:4px 0;">Kota</td><td style="color:#fff;">${ipInfo.city}${ipInfo.region ? ', ' + ipInfo.region : ''}</td></tr>
+          <tr><td style="color:#94a3b8;padding:4px 0;">ISP/Provider</td><td style="color:#fff;">${ipInfo.isp}</td></tr>
+          <tr><td style="color:#94a3b8;padding:4px 0;">Organisasi</td><td style="color:#fff;">${ipInfo.org}</td></tr>
+          ${mapsLink ? `<tr><td style="color:#94a3b8;padding:4px 0;">Koordinat</td><td><a href="${mapsLink}" style="color:#f97316;">Lihat di Google Maps</a></td></tr>` : ''}
+        </table>
+      </div>
+
+      <div style="background:#121826;border:1px solid #1e293b;border-radius:8px;padding:12px;margin-bottom:16px;">
+        <p style="margin:0 0 4px;color:#64748b;font-size:12px;">USER AGENT</p>
+        <p style="margin:0;color:#94a3b8;font-size:12px;word-break:break-all;">${(details.userAgent || '-').substring(0, 150)}</p>
+      </div>
+
+      <div style="background:#1a0a0a;border:1px solid #7f1d1d;border-radius:8px;padding:12px;margin-bottom:16px;">
+        <p style="margin:0;color:#fca5a5;font-size:13px;">
+          🔒 IP ini sudah <strong>diblokir otomatis</strong> oleh sistem firewall SIVILIZE HUB PRO.
+          Tidak ada tindakan manual yang diperlukan.
+        </p>
       </div>
       
       <p style="color:#475569;font-size:12px;margin:0;">
         Email ini dikirim otomatis oleh sistem keamanan SIVILIZE HUB PRO.<br>
-        Jika ini bukan aktivitas yang lo kenal, segera periksa server.
+        Jangan balas email ini.
       </p>
     </div>
   `;
 
   try {
-    // Gunakan emailService yang sudah ada
     const emailService = process.env.EMAIL_SERVICE || 'nodemailer';
 
     if (emailService === 'resend' && process.env.RESEND_API_KEY) {
@@ -90,7 +144,7 @@ async function sendSecurityAlert(type, details) {
       });
     }
 
-    console.log(`📧 Security alert terkirim ke ${adminEmail}: ${type}`);
+    console.log(`📧 Security alert terkirim ke ${adminEmail}: ${type} dari ${details.ip} (${ipInfo.city}, ${ipInfo.country})`);
   } catch (err) {
     console.error('❌ Gagal kirim security alert:', err.message);
   }
