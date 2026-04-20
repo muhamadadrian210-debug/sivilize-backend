@@ -35,10 +35,8 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // ============================================================
-// 2b. STATIC FILES — serve uploaded avatars
+// 2b. STATIC FILES — disabled di Vercel (filesystem read-only)
 // ============================================================
-const path = require('path');
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ============================================================
 // 3. NOSQL INJECTION PROTECTION

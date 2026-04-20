@@ -369,28 +369,10 @@ exports.resetPassword = async (req, res, next) => {
 
 // ── Upload Avatar ────────────────────────────────────────────
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 
-// Pastikan direktori uploads/avatars ada
-const avatarDir = path.join(__dirname, '../uploads/avatars');
-if (!fs.existsSync(avatarDir)) {
-  fs.mkdirSync(avatarDir, { recursive: true });
-}
-
-const avatarStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, avatarDir);
-  },
-  filename: (req, file, cb) => {
-    const userId = req.user._id || req.user.id;
-    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
-    cb(null, `user_${userId}_${Date.now()}${ext}`);
-  },
-});
-
+// Vercel serverless: filesystem read-only, pakai memory storage
 const avatarUpload = multer({
-  storage: avatarStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
   fileFilter: (req, file, cb) => {
     const allowed = ['image/jpeg', 'image/png', 'image/webp'];
@@ -413,7 +395,9 @@ exports.uploadAvatar = [
         return res.status(400).json({ success: false, message: 'File avatar diperlukan' });
       }
 
-      const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+      // Simpan sebagai base64 data URL (Vercel tidak punya persistent filesystem)
+      const base64 = req.file.buffer.toString('base64');
+      const avatarUrl = `data:${req.file.mimetype};base64,${base64}`;
       const userId = req.user._id || req.user.id;
       const UserModel = getStorage();
 
