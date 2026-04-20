@@ -239,15 +239,20 @@ app.use(async (req, res, next) => {
 // ============================================================
 // 10. ROUTES - Auth pakai rate limiter ketat
 // ============================================================
-const { loginBruteForce: bruteForce } = require('./middleware/security');
-app.use('/api/auth', authLimiter, bruteForce, require('./routes/auth'));
+app.use('/api/auth', authLimiter, require('./routes/auth'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/ahsp', require('./routes/ahsp'));
 app.use('/api/materials', require('./routes/materials'));
 app.use('/api/logs', require('./routes/logs'));
 app.use('/api/calculate-rab', require('./routes/calculation'));
 app.use('/api/export', exportLimiter, require('./routes/export'));
-app.use('/api/share', require('./routes/share'));
+
+// Share RAB route (public, no auth required)
+try {
+  app.use('/api/share', require('./routes/share'));
+} catch (e) {
+  console.warn('Share routes not available:', e.message);
+}
 
 // ============================================================
 // 11. HONEYPOT ENDPOINTS — jebak hacker yang coba scan
