@@ -133,9 +133,16 @@ const {
   injectionDetector,
   securityHeaders,
   validateTokenFormat,
-  loginBruteForce,
 } = require('./middleware/security');
 
+const {
+  firewallStack,
+  authFirewallStack,
+  getFirewallStatus,
+} = require('./middleware/firewall');
+
+// Firewall stack — urutan penting
+app.use(firewallStack);
 app.use(securityHeaders);
 app.use(requestSizeLimiter);
 app.use(injectionDetector);
@@ -235,9 +242,9 @@ app.use(async (req, res, next) => {
 });
 
 // ============================================================
-// 10. ROUTES - Auth pakai rate limiter ketat
+// 10. ROUTES - Auth pakai rate limiter + firewall ketat
 // ============================================================
-app.use('/api/auth', authLimiter, require('./routes/auth'));
+app.use('/api/auth', authLimiter, authFirewallStack, require('./routes/auth'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/ahsp', require('./routes/ahsp'));
 app.use('/api/materials', require('./routes/materials'));
@@ -301,6 +308,7 @@ app.get('/health', (req, res) => {
     success: true,
     status: 'healthy',
     db: mongoose.connection.readyState === 1 ? 'MongoDB Connected' : 'In-Memory',
+    firewall: getFirewallStatus(),
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
