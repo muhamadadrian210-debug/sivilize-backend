@@ -176,12 +176,11 @@ app.use((req, res, next) => {
 });
 
 // ============================================================
-// 9. MONGODB CONNECTION
+// 9. MONGODB CONNECTION — Optimized untuk Vercel serverless
 // ============================================================
 const connectDB = async () => {
   const uri = process.env.MONGODB_URI;
   console.log('🔍 MONGODB_URI exists:', !!uri);
-  console.log('🔍 MONGODB_URI prefix:', uri ? uri.substring(0, 40) : 'NONE');
 
   if (!uri) {
     console.log('⚠️ MONGODB_URI tidak ada, pakai in-memory storage');
@@ -193,15 +192,20 @@ const connectDB = async () => {
     try {
       console.log(`🔄 MongoDB connect attempt ${attempt}/3...`);
       await mongoose.connect(uri, {
-        serverSelectionTimeoutMS: 15000,
-        socketTimeoutMS: 45000,
-        connectTimeoutMS: 15000,
+        serverSelectionTimeoutMS: 10000,
+        socketTimeoutMS: 30000,
+        connectTimeoutMS: 10000,
+        // Connection pool — reuse koneksi antar invocations
+        maxPoolSize: 10,
+        minPoolSize: 1,
+        maxIdleTimeMS: 270000, // 4.5 menit — sedikit di bawah Vercel timeout 5 menit
+        heartbeatFrequencyMS: 30000,
       });
       console.log('✅ MongoDB Connected!');
       return;
     } catch (err) {
       console.log(`❌ Attempt ${attempt} failed: ${err.message}`);
-      if (attempt < 3) await new Promise(r => setTimeout(r, 2000));
+      if (attempt < 3) await new Promise(r => setTimeout(r, 1500));
     }
   }
   console.log('⚠️ Semua attempt gagal, pakai in-memory storage');
@@ -312,6 +316,11 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
+});
+
+// Ping endpoint — ringan, untuk keep-alive dari frontend & cron
+app.get('/ping', (req, res) => {
+  res.json({ ok: true, ts: Date.now() });
 });
 
 // 404
