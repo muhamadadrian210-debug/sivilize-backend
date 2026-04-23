@@ -367,8 +367,93 @@ exports.resetPassword = async (req, res, next) => {
   }
 };
 
-// ── Upload Avatar ────────────────────────────────────────────
-const multer = require('multer');
+// ── OTP — Send & Verify ─────────────────────────────────────
+
+const { generateOTP, storeOTP, verifyOTP, sendOTPEmail } = require('../utils/otpService');
+
+// Rate limit OTP per email
+const otpRateLimit = new Map();
+function checkOtpRate(email) {
+  const now = Date.now();
+  const rec = otpRateLimit.get(email) || { count: 0, first: now };
+  if (now - rec.first > 60 * 1000) { rec.count = 0; rec.first = now; }
+  if (rec.count >= 3) return false; // maks 3x per menit
+  rec.count++;
+  otpRateLimit.set(email, rec);
+  return true;
+}
+
+// @desc    Kirim OTP ke email
+// @route   POST /api/auth/send-otp
+// @access  Public
+exports.sendOtp = async (req, res, next) => {
+  try {
+    const { email, purpose } = req.body; // purpose: 'login' | 'register'
+    if (!email) return res.status(400).json({ success: false, message: 'Email diperlukan' });
+
+    if (!checkOtpRate(email.toLowerCase())) {
+      return res.status(429).json({ success: false, message: 'Terlalu banyak permintaan OTP. Tunggu 1 menit.' });
+    }
+
+    const otp = generateOTP();
+    storeOTP(email, otp);
+    await sendOTPEmail(email, otp, purpose || 'login');
+
+    res.status(200).json({ success: true, message: `Kode OTP telah dikirim ke ${email}` });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Verifikasi OTP lalu login/register
+// @route   POST /api/auth/verify-otp
+// @access  Public
+exports.verifyOtp = async (req, res, next) => {
+  try {
+    const { email, otp, purpose, name, password } = req.body;
+    if (!email || !otp) return res.status(400).json({ success: false, message: 'Email dan OTP diperlukan' });
+
+    const result = verifyOTP(email, otp);
+    if (!result.valid) {
+      return res.status(400).json({ success: false, message: result.reason });
+    }
+
+    // OTP valid — lanjut register atau login
+    if (purpose === 'register') {
+      if (!name || !password) return res.status(400).json({ success: false, message: 'Nama dan password diperlukan untuk register' });
+      const UserModel = getStorage();
+      if (UserModel) {
+        const existing = await UserModel.findOne({ email: email.toLowerCase() });
+        if (existing) return res.status(400).json({ success: false, message: 'Email sudah terdaftar' });
+        const user = await UserModel.create({ name, email: email.toLowerCase(), password, role: 'user' });
+        return sendTokenResponse({ _id: user._id, name: user.name, email: user.email, role: user.role }, 201, res);
+      } else {
+        const existing = mockStorage.findOne('users', { email: email.toLowerCase() });
+        if (existing) return res.status(400).json({ success: false, message: 'Email sudah terdaftar' });
+        const salt = await bcrypt.genSalt(10);
+        const hashed = await bcrypt.hash(password, salt);
+        const user = mockStorage.create('users', { name, email: email.toLowerCase(), password: hashed, role: 'user' });
+        return sendTokenResponse(user, 201, res);
+      }
+    } else {
+      // Login — cari user dan return token
+      const UserModel = getStorage();
+      if (UserModel) {
+        const user = await UserModel.findOne({ email: email.toLowerCase() });
+        if (!user) return res.status(401).json({ success: false, message: 'Email tidak terdaftar' });
+        return sendTokenResponse({ _id: user._id, name: user.name, email: user.email, role: user.role }, 200, res);
+      } else {
+        const user = mockStorage.findOne('users', { email: email.toLowerCase() });
+        if (!user) return res.status(401).json({ success: false, message: 'Email tidak terdaftar' });
+        return sendTokenResponse(user, 200, res);
+      }
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── Upload Avatar ────────────────────────────────────────────const multer = require('multer');
 
 // Vercel serverless: filesystem read-only, pakai memory storage
 const avatarUpload = multer({
