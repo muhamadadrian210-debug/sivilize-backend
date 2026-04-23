@@ -75,7 +75,7 @@ function verifyOTP(email, inputOtp) {
  */
 async function sendOTPEmail(email, otp, purpose = 'login') {
   const apiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.EMAIL_FROM || 'onboarding@resend.dev';
+  const fromEmail = 'sivilize-hub-pro@sivilize-corp.com';
   const fromName  = 'Sivilize Corp';
 
   const purposeLabel = purpose === 'register' ? 'Verifikasi Pendaftaran' : 'Verifikasi Login';
@@ -86,10 +86,17 @@ async function sendOTPEmail(email, otp, purpose = 'login') {
   const html = `
     <div style="font-family:'Segoe UI',sans-serif;max-width:480px;margin:0 auto;background:#0a0a0f;color:#fff;padding:40px 32px;border-radius:16px;border:1px solid #1e293b;">
       
-      <!-- Logo -->
+      <!-- Logo — sama persis dengan di web -->
       <div style="text-align:center;margin-bottom:32px;">
-        <div style="display:inline-block;background:#FF7A00;width:48px;height:48px;border-radius:12px;line-height:48px;font-size:24px;font-weight:900;color:#fff;">S</div>
-        <p style="margin:8px 0 0;color:#FF7A00;font-weight:700;font-size:14px;letter-spacing:2px;text-transform:uppercase;">Sivilize Hub Pro</p>
+        <div style="display:inline-flex;align-items:center;gap:12px;">
+          <div style="background:#FF7A00;width:48px;height:48px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(255,122,0,0.4);">
+            <span style="color:#fff;font-size:26px;font-weight:900;font-family:'Segoe UI',sans-serif;">S</span>
+          </div>
+          <div style="text-align:left;">
+            <p style="margin:0;color:#fff;font-weight:900;font-size:18px;font-style:italic;letter-spacing:-0.5px;">SIVILIZE HUB</p>
+            <p style="margin:0;color:#FF7A00;font-weight:700;font-size:10px;letter-spacing:3px;text-transform:uppercase;">PRO EDITION</p>
+          </div>
+        </div>
       </div>
 
       <!-- Title -->
@@ -97,9 +104,9 @@ async function sendOTPEmail(email, otp, purpose = 'login') {
       <p style="text-align:center;color:#94a3b8;margin:0 0 32px;font-size:14px;">${purposeDesc}</p>
 
       <!-- OTP Box -->
-      <div style="background:#121826;border:2px solid #FF7A00;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px;">
+      <div style="background:#121826;border:2px solid #FF7A00;border-radius:12px;padding:28px;text-align:center;margin-bottom:24px;">
         <p style="margin:0 0 8px;color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:2px;">Kode OTP Anda</p>
-        <p style="margin:0;font-size:42px;font-weight:900;letter-spacing:12px;color:#FF7A00;font-family:monospace;">${otp}</p>
+        <p style="margin:0;font-size:48px;font-weight:900;letter-spacing:14px;color:#FF7A00;font-family:monospace;">${otp}</p>
         <p style="margin:12px 0 0;color:#64748b;font-size:12px;">Berlaku selama <strong style="color:#fff;">5 menit</strong></p>
       </div>
 
@@ -110,9 +117,13 @@ async function sendOTPEmail(email, otp, purpose = 'login') {
         </p>
       </div>
 
+      <!-- Divider -->
+      <div style="border-top:1px solid #1e293b;margin:24px 0;"></div>
+
       <!-- Footer -->
       <p style="text-align:center;color:#475569;font-size:12px;margin:0;">
         Jika Anda tidak melakukan ini, abaikan email ini.<br>
+        Dikirim oleh <strong style="color:#FF7A00;">Sivilize Corp</strong> &bull; sivilize-hub-pro@sivilize-corp.com<br>
         &copy; 2026 Sivilize Corp. All rights reserved.
       </p>
     </div>
