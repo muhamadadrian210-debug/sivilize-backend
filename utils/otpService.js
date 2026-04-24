@@ -1,5 +1,5 @@
 /**
- * OTP Service — Generate, simpan, verifikasi, dan kirim OTP
+ * OTP Service â€” Generate, simpan, verifikasi, dan kirim OTP
  * Pakai Resend API dengan nama pengirim "Sivilize Corp"
  */
 
@@ -64,7 +64,7 @@ function verifyOTP(email, inputOtp) {
     return { valid: false, reason: `OTP salah. Sisa percobaan: ${remaining}` };
   }
 
-  // OTP valid — hapus dari store
+  // OTP valid â€” hapus dari store
   otpStore.delete(email.toLowerCase());
   return { valid: true, reason: 'OK' };
 }
@@ -86,7 +86,7 @@ async function sendOTPEmail(email, otp, purpose = 'login') {
   const html = `
     <div style="font-family:'Segoe UI',sans-serif;max-width:480px;margin:0 auto;background:#0a0a0f;color:#fff;padding:40px 32px;border-radius:16px;border:1px solid #1e293b;">
       
-      <!-- Logo — sama persis dengan di web -->
+      <!-- Logo â€” sama persis dengan di web -->
       <div style="text-align:center;margin-bottom:32px;">
         <div style="display:inline-flex;align-items:center;gap:12px;">
           <div style="background:#FF7A00;width:48px;height:48px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(255,122,0,0.4);">
@@ -113,7 +113,7 @@ async function sendOTPEmail(email, otp, purpose = 'login') {
       <!-- Warning -->
       <div style="background:#1a1a0a;border:1px solid #854d0e;border-radius:8px;padding:12px 16px;margin-bottom:24px;">
         <p style="margin:0;color:#fbbf24;font-size:12px;">
-          ⚠️ <strong>Jangan bagikan kode ini</strong> kepada siapapun, termasuk tim Sivilize Corp. Kami tidak pernah meminta kode OTP Anda.
+          âš ï¸ <strong>Jangan bagikan kode ini</strong> kepada siapapun, termasuk tim Sivilize Corp. Kami tidak pernah meminta kode OTP Anda.
         </p>
       </div>
 
@@ -131,9 +131,15 @@ async function sendOTPEmail(email, otp, purpose = 'login') {
 
   if (!apiKey) {
     // Dev mode: log OTP ke console
-    console.log(`📧 [DEV] OTP untuk ${email}: ${otp}`);
+    console.log(`ðŸ“§ [DEV] OTP untuk ${email}: ${otp}`);
     return { success: true, dev: true };
   }
+
+  // Gunakan domain yang sudah diverifikasi di Resend
+  // Jika domain custom belum verified, fallback ke onboarding@resend.dev
+  const verifiedFrom = process.env.RESEND_FROM_VERIFIED === 'true'
+    ? `${fromName} <${fromEmail}>`
+    : `${fromName} <onboarding@resend.dev>`;
 
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -143,7 +149,7 @@ async function sendOTPEmail(email, otp, purpose = 'login') {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: `${fromName} <${fromEmail}>`,
+        from: verifiedFrom,
         to: [email],
         subject: `[Sivilize Corp] Kode OTP ${purposeLabel}: ${otp}`,
         html,
@@ -155,10 +161,10 @@ async function sendOTPEmail(email, otp, purpose = 'login') {
       throw new Error(err.message || 'Resend API error');
     }
 
-    console.log(`✅ OTP terkirim ke ${email}`);
+    console.log(`âœ… OTP terkirim ke ${email}`);
     return { success: true };
   } catch (err) {
-    console.error('❌ Gagal kirim OTP:', err.message);
+    console.error('âŒ Gagal kirim OTP:', err.message);
     throw err;
   }
 }
