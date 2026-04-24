@@ -1,17 +1,17 @@
-const jwt = require('jsonwebtoken');
+﻿const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const { validateRegister, validateLogin } = require('../validators/authValidator');
 const { sanitizeObject } = require('../utils/sanitizer');
 
-// Email admin â€” otomatis dapat role 'admin'
-const ADMIN_EMAILS = [
-  'muhamadadrian210@gmail.com',
-  ...(process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase()) : []),
-];
+// Hanya 1 admin, tidak bisa diubah dari luar
+const ADMIN_EMAILS = ['muhamadadrian210@gmail.com'];
 
 const getRoleForEmail = (email) =>
   ADMIN_EMAILS.includes(email.toLowerCase()) ? 'admin' : 'user';
+
+
+
 
 // Helper: pakai MongoDB atau in-memory
 const getStorage = () => {
