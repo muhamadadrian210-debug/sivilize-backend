@@ -388,8 +388,26 @@ function checkOtpRate(email) {
 // @access  Public
 exports.sendOtp = async (req, res, next) => {
   try {
-    const { email, purpose } = req.body; // purpose: 'login' | 'register'
+    const { email, purpose } = req.body;
     if (!email) return res.status(400).json({ success: false, message: 'Email diperlukan' });
+
+    // Validasi format email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ success: false, message: 'Format email tidak valid' });
+    }
+
+    // Validasi domain email — cek apakah domain punya MX record
+    const domain = email.split('@')[1];
+    try {
+      const dns = require('dns').promises;
+      const mx = await dns.resolveMx(domain);
+      if (!mx || mx.length === 0) {
+        return res.status(400).json({ success: false, message: `Email tidak valid — domain "${domain}" tidak ditemukan` });
+      }
+    } catch {
+      return res.status(400).json({ success: false, message: `Email tidak valid — domain "${domain}" tidak dapat diverifikasi` });
+    }
 
     if (!checkOtpRate(email.toLowerCase())) {
       return res.status(429).json({ success: false, message: 'Terlalu banyak permintaan OTP. Tunggu 1 menit.' });
@@ -397,7 +415,12 @@ exports.sendOtp = async (req, res, next) => {
 
     const otp = generateOTP();
     storeOTP(email, otp);
-    await sendOTPEmail(email, otp, purpose || 'login');
+
+    try {
+      await sendOTPEmail(email, otp, purpose || 'login');
+    } catch {
+      return res.status(400).json({ success: false, message: 'Email tidak valid atau tidak dapat menerima pesan. Periksa kembali alamat email Anda.' });
+    }
 
     res.status(200).json({ success: true, message: `Kode OTP telah dikirim ke ${email}` });
   } catch (err) {
