@@ -4,6 +4,15 @@ const mongoose = require('mongoose');
 const { validateRegister, validateLogin } = require('../validators/authValidator');
 const { sanitizeObject } = require('../utils/sanitizer');
 
+// Email admin â€” otomatis dapat role 'admin'
+const ADMIN_EMAILS = [
+  'muhamadadrian210@gmail.com',
+  ...(process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase()) : []),
+];
+
+const getRoleForEmail = (email) =>
+  ADMIN_EMAILS.includes(email.toLowerCase()) ? 'admin' : 'user';
+
 // Helper: pakai MongoDB atau in-memory
 const getStorage = () => {
   if (mongoose.connection.readyState === 1) {
@@ -41,7 +50,7 @@ exports.register = async (req, res, next) => {
         name: sanitizeObject({ name }).name,
         email: email.toLowerCase(),
         password,
-        role: role || 'user'
+        role: getRoleForEmail(email)
       });
       return sendTokenResponse({ _id: user._id, name: user.name, email: user.email, role: user.role }, 201, res);
     } else {
@@ -56,7 +65,7 @@ exports.register = async (req, res, next) => {
         name: sanitizeObject({ name }).name,
         email: email.toLowerCase(),
         password: hashedPassword,
-        role: role || 'user'
+        role: getRoleForEmail(email)
       });
       return sendTokenResponse(user, 201, res);
     }
@@ -91,6 +100,12 @@ exports.login = async (req, res, next) => {
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
         return res.status(401).json({ success: false, message: 'Kredensial tidak valid' });
+      }
+      // Auto-upgrade role jika email admin
+      const correctRole = getRoleForEmail(email);
+      if (user.role !== correctRole) {
+        user.role = correctRole;
+        await user.save({ validateBeforeSave: false });
       }
       return sendTokenResponse({ _id: user._id, name: user.name, email: user.email, role: user.role }, 200, res);
     } else {
@@ -220,7 +235,7 @@ exports.updateProfile = async (req, res, next) => {
   }
 };
 
-// ── Rate limit store untuk forgot password ──────────────────
+// â”€â”€ Rate limit store untuk forgot password â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const resetRateLimits = new Map();
 const RATE_LIMIT_MAX = 3;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 jam
@@ -244,7 +259,7 @@ function checkResetRateLimit(email) {
   return { allowed: true };
 }
 
-// @desc    Forgot password — generate reset token dan kirim email
+// @desc    Forgot password â€” generate reset token dan kirim email
 // @route   POST /api/auth/forgot-password
 // @access  Public
 exports.forgotPassword = async (req, res, next) => {
@@ -298,7 +313,7 @@ exports.forgotPassword = async (req, res, next) => {
         const { sendResetPasswordEmail } = require('../utils/emailService');
         await sendResetPasswordEmail(email, userName, resetUrl);
       } catch (emailErr) {
-        console.error('❌ Gagal kirim email reset:', emailErr.message);
+        console.error('âŒ Gagal kirim email reset:', emailErr.message);
         return res.status(500).json({
           success: false,
           message: 'Gagal mengirim email. Silakan coba lagi.'
@@ -306,7 +321,7 @@ exports.forgotPassword = async (req, res, next) => {
       }
     } else {
       // Development mode: tampilkan token di response
-      console.log('🔑 Reset URL (dev mode):', resetUrl);
+      console.log('ðŸ”‘ Reset URL (dev mode):', resetUrl);
     }
 
     res.status(200).json({
@@ -367,7 +382,7 @@ exports.resetPassword = async (req, res, next) => {
   }
 };
 
-// ── OTP — Send & Verify ─────────────────────────────────────
+// â”€â”€ OTP â€” Send & Verify â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const { generateOTP, storeOTP, verifyOTP, sendOTPEmail } = require('../utils/otpService');
 
@@ -397,16 +412,16 @@ exports.sendOtp = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Format email tidak valid' });
     }
 
-    // Validasi domain email — cek apakah domain punya MX record
+    // Validasi domain email â€” cek apakah domain punya MX record
     const domain = email.split('@')[1];
     try {
       const dns = require('dns').promises;
       const mx = await dns.resolveMx(domain);
       if (!mx || mx.length === 0) {
-        return res.status(400).json({ success: false, message: `Email tidak valid — domain "${domain}" tidak ditemukan` });
+        return res.status(400).json({ success: false, message: `Email tidak valid â€” domain "${domain}" tidak ditemukan` });
       }
     } catch {
-      return res.status(400).json({ success: false, message: `Email tidak valid — domain "${domain}" tidak dapat diverifikasi` });
+      return res.status(400).json({ success: false, message: `Email tidak valid â€” domain "${domain}" tidak dapat diverifikasi` });
     }
 
     if (!checkOtpRate(email.toLowerCase())) {
@@ -441,25 +456,25 @@ exports.verifyOtp = async (req, res, next) => {
       return res.status(400).json({ success: false, message: result.reason });
     }
 
-    // OTP valid — lanjut register atau login
+    // OTP valid â€” lanjut register atau login
     if (purpose === 'register') {
       if (!name || !password) return res.status(400).json({ success: false, message: 'Nama dan password diperlukan untuk register' });
       const UserModel = getStorage();
       if (UserModel) {
         const existing = await UserModel.findOne({ email: email.toLowerCase() });
         if (existing) return res.status(400).json({ success: false, message: 'Email sudah terdaftar' });
-        const user = await UserModel.create({ name, email: email.toLowerCase(), password, role: 'user' });
+        const user = await UserModel.create({ name, email: email.toLowerCase(), password, role: getRoleForEmail(email) });
         return sendTokenResponse({ _id: user._id, name: user.name, email: user.email, role: user.role }, 201, res);
       } else {
         const existing = mockStorage.findOne('users', { email: email.toLowerCase() });
         if (existing) return res.status(400).json({ success: false, message: 'Email sudah terdaftar' });
         const salt = await bcrypt.genSalt(10);
         const hashed = await bcrypt.hash(password, salt);
-        const user = mockStorage.create('users', { name, email: email.toLowerCase(), password: hashed, role: 'user' });
+        const user = mockStorage.create('users', { name, email: email.toLowerCase(), password: hashed, role: getRoleForEmail(email) });
         return sendTokenResponse(user, 201, res);
       }
     } else {
-      // Login — cari user dan return token
+      // Login â€” cari user dan return token
       const UserModel = getStorage();
       if (UserModel) {
         const user = await UserModel.findOne({ email: email.toLowerCase() });
@@ -476,7 +491,7 @@ exports.verifyOtp = async (req, res, next) => {
   }
 };
 
-// ── Upload Avatar ────────────────────────────────────────────const multer = require('multer');
+// â”€â”€ Upload Avatar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€const multer = require('multer');
 
 // Vercel serverless: filesystem read-only, pakai memory storage
 const avatarUpload = multer({
